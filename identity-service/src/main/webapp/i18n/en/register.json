@@ -1,0 +1,37 @@
+{
+    "register": {
+        "title": "Register a new account",
+        "form": {
+            "button": "Register"
+        },
+        "messages": {
+            "validate": {
+                "login": {
+                    "required": "Your account name is required.",
+                    "minlength": "Your account name is required to be at least 1 character",
+                    "maxlength": "Your account name cannot be longer than 50 characters",
+                    "pattern": "Your account name can only contain lower-case letters and digits"
+                },
+                "email": {
+                    "required": "Your e-mail address is required."
+                },
+                "firstName": {
+                    "required": "Your first name is required.",
+                    "minlength": "Your first name is required to be at least 1 character",
+                    "maxlength": "Your first name cannot be longer than 50 characters"
+                },
+                "lastName": {
+                    "required": "Your last name is required.",
+                    "minlength": "Your last name is required to be at least 1 character",
+                    "maxlength": "Your last name cannot be longer than 50 characters"
+                }
+            },
+            "success": "<strong>Registration saved!</strong> Please check your email for confirmation.",
+            "error": {
+                "fail": "<strong>Sorry, we had a problem and were unable to complete your registration.</strong> Please try again later.",
+                "userexists": "<strong>Sorry, your requested account name is already in use.</strong> Please choose another one.",
+                "emailexists": "<strong>Sorry, your requested e-mail address is already in use.</strong> Please choose another one."
+            }
+        }
+    }
+}

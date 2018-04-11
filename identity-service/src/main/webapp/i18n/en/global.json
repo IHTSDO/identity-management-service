@@ -1,0 +1,107 @@
+{
+    "global": {
+        "title": "SNOMED International Tools",
+        "browsehappy": "You are using an <strong>outdated</strong> browser. Please <a href=\"http://browsehappy.com/?locale=en\">upgrade your browser</a> to improve your experience.",
+        "menu": {
+            "home": "Home",
+            "account": {
+                "main": "My Account",
+                "settings": "Settings",
+                "password": "Password",
+                "login": "Log In",
+                "logout": "Log Out",
+                "register": "Register"
+            },
+            "admin": {
+                "main": "Administration",
+                "tracker": "User Tracker",
+                "configuration": "Configuration",
+                "logs": "Logs",
+                "apidocs": "API"
+            }
+        },
+        "form": {
+            "username": "Account name",
+            "username.placeholder": "Your account name",
+            "newpassword": "New password",
+            "newpassword.placeholder": "New password",
+            "confirmpassword": "New password confirmation",
+            "confirmpassword.placeholder": "Confirm the new password",
+            "firstName": "First Name",
+            "firstName.placeholder": "Your first name",
+            "lastName": "Last Name",
+            "lastName.placeholder": "Your last name",
+            "email": "E-mail",
+            "email.placeholder": "Your e-mail address"
+        },
+        "messages": {
+            "info": {
+                "authenticated": "Welcome to SNOMED International Tools! <br> Already have an account?<br> <a href=\"#/login\">Log in</a>",
+                "register": "No account yet? <a href=\"http://snomed.org/accounts\">Register a new account</a>",
+                "forgotpassword": "Forgotten password? <a href=\"#/forgotpassword\">Request a password reset</a>"
+                
+            },
+            "error": {
+                "dontmatch" : "The password and its confirmation do not match!",
+                "invalidKey" : "Sorry, we had a problem - your password reset link has either expired or has become invalid. <a href=\"#/forgotpassword\">Request another password reset</a>"
+            },
+            "validate": {
+                "newpassword": {
+                    "required": "Your password is required.",
+                    "minlength": "Your password is required to be at least 5 characters.",
+                    "maxlength": "Your password cannot be longer than 50 characters.",
+                    "strength": "Password strength:"
+                },
+                "confirmpassword": {
+                    "required": "Your confirmation password is required.",
+                    "minlength": "Your confirmation password is required to be at least 5 characters.",
+                    "maxlength": "Your confirmation password cannot be longer than 50 characters."
+                },
+                "email": {
+                    "required": "Your e-mail is required.",
+                    "invalid": "Your e-mail is invalid.",
+                    "minlength": "Your e-mail is required to be at least 5 characters.",
+                    "maxlength": "Your e-mail cannot be longer than 50 characters."
+                }, 
+                "firstName": {
+                    "required": "Your first name is required.",
+                    "minlength": "Your first name is required to be at least 1 character.",
+                    "maxlength": "Your first name cannot be longer than 50 characters."
+                },
+                "lastName": {
+                    "required": "Your last name is required.",
+                    "minlength": "Your last name is required to be at least 1 character.",
+                    "maxlength": "Your last name cannot be longer than 50 characters."
+                }
+            }
+        }
+    },
+    "entity": {
+        "action": {
+            "back": "Back",
+            "cancel": "Cancel",
+            "delete": "Delete",
+            "edit": "Edit",
+            "save": "Save",
+            "view": "View"
+        },
+        "detail": {
+            "field": "Field",
+            "value": "Value"
+        },
+        "delete": {
+            "title": "Confirm delete operation"
+        },
+        "validation": {
+            "required": "This field is required.",
+            "minlength": "This field is required to be at least {{min}} characters.",
+            "maxlength": "This field cannot be longer than {{max}} characters.",
+            "min": "This field should be more than {{min}}.",
+            "max": "This field cannot be more than {{max}}.",
+            "pattern": "This field should follow pattern {{pattern}}.",
+            "number": "This field should be a number.",
+            "datetimelocal": "This field should be a date and time."
+        }
+    },
+    "footer": "Copyright © 2017 SNOMED International"
+}

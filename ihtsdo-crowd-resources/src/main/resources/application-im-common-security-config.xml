@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:s="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd">
+    <!-- THIS is mainly to avoid putting too many atlassian java classes inside java code. SSO + application specific bean configurations -->
+	 <context:property-placeholder location="file:${crowdPropertiesFileLocation}/crowd.properties"/>
+
+     <bean id="crowdUserDetailsService" class="org.ihtsdo.otf.im.sso.service.IHTSDOUserDetailsService">
+        <property name="groupMembershipManager" ref="crowdGroupMembershipManager"/>
+        <property name="userManager" ref="crowdUserManager"/>
+        <property name="authorityPrefix" value="ROLE_"/>
+    </bean>
+    
+    <bean id="crowdAuthenticationProvider" class="com.atlassian.crowd.integration.springsecurity.RemoteCrowdAuthenticationProvider">
+        <constructor-arg ref="crowdAuthenticationManager"/>
+        <constructor-arg ref="httpAuthenticator"/>
+        <constructor-arg ref="crowdUserDetailsService"/>
+    </bean>
+    
+    <bean id="logoutFilter" class="org.springframework.security.web.authentication.logout.LogoutFilter">
+        <constructor-arg value="${ihtsdo.im.service.base.url}" /> <!-- -logout success url -->
+        <constructor-arg>
+            <list>
+				    <bean class="com.atlassian.crowd.integration.springsecurity.CrowdLogoutHandler">
+				        <property name="httpAuthenticator" ref="httpAuthenticator"/>
+				    </bean>
+                    <bean class="org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler"/>
+                    <bean class="org.ihtsdo.otf.im.security.AjaxLogoutSuccessHandler" />
+            </list>
+        </constructor-arg>
+        <property name="filterProcessesUrl" value="/j_spring_security_logout"/>
+    </bean>
+    
+
+    
+	<bean id="authenticationProcessingFilter" class="com.atlassian.crowd.integration.springsecurity.CrowdSSOAuthenticationProcessingFilter">
+        <property name="httpAuthenticator" ref="httpAuthenticator"/>
+        <property name="authenticationManager" ref="authenticationManager"/>
+        <property name="authenticationFailureHandler">
+            <!--bean class="com.atlassian.crowd.integration.springsecurity.UsernameStoringAuthenticationFailureHandler"-->
+            <bean class="org.ihtsdo.otf.im.security.AjaxAuthenticationFailureHandler">
+                <!--property name="defaultFailureUrl" value="${ihtsdo.im.service.base.url}/#/login"/-->
+            </bean>
+        </property>
+                 
+        <property name="authenticationSuccessHandler">
+            <!--bean class="org.ihtsdo.otf.im.security.AjaxAuthenticationSuccessHandler"-->
+            <bean class="org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler">
+  	            <property name="defaultTargetUrl" value="${ihtsdo.im.service.base.url}"/>
+            </bean>
+        </property>
+        <property name="loginUrlAuthenticationEntryPoint" ref="crowdAuthenticationProcessingFilterEntryPoint" />
+    	<property name="filterProcessesUrl" value="/j_security_check"/>   
+    </bean>
+    
+ 	<s:authentication-manager alias='authenticationManager'>
+        <s:authentication-provider ref='crowdAuthenticationProvider'/>
+    </s:authentication-manager> 
+
+    <bean id="crowdAuthenticationProcessingFilterEntryPoint" class="org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint">
+        <property name="loginFormUrl" value="${ihtsdo.im.service.base.url}/#/login"/>
+    </bean>
+        
+</beans>
