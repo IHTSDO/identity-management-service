@@ -1,0 +1,28 @@
+<assembly>
+
+	<id>identity-service-properties-files</id>
+	
+	<formats>
+		<format>zip</format>
+	</formats>
+  	<includeBaseDirectory>false</includeBaseDirectory>
+ 	<fileSets>
+		<!-- Add all resources under src/main/resources to zip
+		-->
+		<fileSet>
+     		<directory>src/main/resources/</directory>
+      		<outputDirectory></outputDirectory>
+			<includes>
+				<include>/**/application*.yml</include>
+			</includes>
+		</fileSet>
+		<fileSet>
+     		<directory>${project.build.directory}/generated-resources</directory>
+      		<outputDirectory></outputDirectory>
+			<includes>
+				<include>crowd.properties</include>
+			</includes>
+		</fileSet>
+
+	</fileSets>
+</assembly>

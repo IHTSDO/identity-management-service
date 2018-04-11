@@ -1,0 +1,12 @@
+{
+    "main": {
+        "title": "Welcome to SNOMED International Tools!",
+        "subtitle": "Home of SNOMED CT Browser, Refset Service and Authoring Tooling",
+        "logged": {
+            "message": "You are logged in as \"{{username}}\"."
+        },
+        "logout": {
+            "message": "You are now logged out."
+        }
+    }
+}

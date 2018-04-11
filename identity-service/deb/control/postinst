@@ -1,0 +1,11 @@
+#!/bin/sh -e
+
+#For debugging uncomment these two lines
+set -x
+echo $*
+
+APP_NAME=[[packageName]]
+
+sed -i -- 's/_name_/'$APP_NAME'/g' /etc/supervisor/conf.d/$APP_NAME.conf
+supervisorctl update $APP_NAME || true
+supervisorctl start $APP_NAME || true
