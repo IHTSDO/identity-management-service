@@ -15,5 +15,7 @@ public final class AuthoritiesConstants {
 	public static final String ANONYMOUS = "ROLE_ANONYMOUS";
 
 	public static final String EXTERNAL_USER = "ROLE_external-users";
+	
+	public static final String ROLE_PREFIX = "ROLE_";
 
 }

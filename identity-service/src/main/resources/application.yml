@@ -1,0 +1,25 @@
+server:
+    port: 8080
+
+cookie:
+  name: dev-ims-ihtsdo
+  maxAge: 3600
+  domain:  ihtsdotools.org
+
+crowd:
+  api:
+    url: http://localhost:8095/crowd/rest/usermanagement/1
+    auth:
+      application-name: ihtsdo-tools
+      application-password: ihtsdo-tools
+
+# Disable Jolokia - An http/json bridge for remote JMX access
+endpoints.jolokia.enabled: false
+
+swagger:
+    title: SNOMED International SSO
+    description: SNOMED International Identity & SSO Service
+    termsOfServiceUrl: 
+    contact: support@ihtsdo.org
+    license: Apache 2.0
+    licenseUrl: http://www.apache.org/licenses/LICENSE-2.0.html

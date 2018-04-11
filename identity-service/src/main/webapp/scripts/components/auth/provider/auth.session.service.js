@@ -8,16 +8,16 @@ angular.module('imApp')
             	var sReferer = $location.search().serviceReferer;
             	var isSRefererExist = angular.isUndefined(sReferer) || sReferer === null;
                 
-            	var data = 'j_username=' + encodeURIComponent(credentials.username) +
-                    '&j_password=' + encodeURIComponent(credentials.password) +
-                    '&_spring_security_remember_me=' + credentials.rememberMe + '&submit=Login';
+            	var data = 'username=' + encodeURIComponent(credentials.username) +
+                    '&password=' + encodeURIComponent(credentials.password) +
+                    '&remember-me=' + credentials.rememberMe + '&submit=Login';
                 
                 if (!(isSRefererExist)) {
 					
                 	data = data + '&serviceReferer=' +  encodeURIComponent(sReferer);
 				}
 
-                return $http.post('/j_security_check', data, {
+                return $http.post('/login', data, {
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded'
                     }

@@ -57,7 +57,7 @@ angular.module('imApp', ['LocalStorageModule', 'tmh.dynamicLocale',
         $httpProvider.defaults.xsrfHeaderName = 'X-CSRF-TOKEN';
 
         //Cache everything except rest api requests
-        httpRequestInterceptorCacheBusterProvider.setMatchlist([/.*api.*/, /.*protected.*/, /.*j_spring_security_logout.*/, /.*j_security_check.*/], true);
+        httpRequestInterceptorCacheBusterProvider.setMatchlist([/.*api.*/, /.*protected.*/, /.*j_spring_security_logout.*/, /.*login.*/], true);
 
         $urlRouterProvider.otherwise('/');
         $stateProvider.state('site', {

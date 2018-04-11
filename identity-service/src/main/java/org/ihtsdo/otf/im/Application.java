@@ -1,85 +1,33 @@
 package org.ihtsdo.otf.im;
 
-import org.ihtsdo.otf.im.config.Constants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.ihtsdo.otf.im.service.CrowdRestClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.actuate.autoconfigure.ManagementSecurityAutoConfiguration;
-import org.springframework.boot.actuate.autoconfigure.MetricFilterAutoConfiguration;
-import org.springframework.boot.actuate.autoconfigure.MetricRepositoryAutoConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration;
-import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.core.env.Environment;
-import org.springframework.core.env.SimpleCommandLinePropertySource;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.Arrays;
+@SpringBootApplication
+@EnableWebSecurity
+public class Application implements ApplicationRunner {
 
-@ComponentScan
-@EnableAutoConfiguration(exclude = {MetricFilterAutoConfiguration.class, MetricRepositoryAutoConfiguration.class,
-		ManagementSecurityAutoConfiguration.class, SecurityAutoConfiguration.class})
-public class Application {
+	public static final String TEST_USERNAME = "test-username";
+	public static final String TEST_PASSWORD = "test-password";
+	@Autowired
+	private CrowdRestClient crowdRestClient;
 
-	private static final Logger log = LoggerFactory.getLogger(Application.class);
+	public static void main(String[] args) {
+		SpringApplication.run(Application.class, args);
+	}
 
-	@Inject
-	private Environment env;
-
-	/**
-	 * Initializes im.
-	 * <p/>
-	 * Spring profiles can be configured with a program arguments --spring.profiles.active=your-active-profile
-	 * <p/>
-	 */
-	@PostConstruct
-	public void initApplication() throws IOException {
-		if (env.getActiveProfiles().length == 0) {
-			log.warn("No Spring profile configured, running with default configuration");
-		} else {
-			log.info("Running with Spring profile(s) : {}", Arrays.toString(env.getActiveProfiles()));
+	@Override
+	public void run(ApplicationArguments applicationArguments) throws Exception {
+		if (applicationArguments.containsOption(TEST_USERNAME) && applicationArguments.containsOption(TEST_PASSWORD)) {
+			String username = applicationArguments.getOptionValues("username").get(0);
+			String password = applicationArguments.getOptionValues("password").get(0);
+			crowdRestClient.authenticate(username, password);
 		}
 	}
-
-	/**
-	 * Main method, used to run the application.
-	 */
-	public static void main(String[] args) throws UnknownHostException {
-		SpringApplication app = new SpringApplication(Application.class);
-		app.setShowBanner(false);
-
-		SimpleCommandLinePropertySource source = new SimpleCommandLinePropertySource(args);
-
-		// Check if the selected profile has been set as argument.
-		// if not the development profile will be added
-		addDefaultProfile(app, source);
-
-//		String[] devArgs = {"--crowdPropertiesFileLocation=identity-service/src/test/resources/config",
-//				"--spring.config.location=identity-service/configfiles/application-dev.yml "};
-//		Environment env = app.run(devArgs).getEnvironment();
-
-		Environment env = app.run(args).getEnvironment();
-		log.info("Access URLs:\n----------------------------------------------------------\n\t" +
-						"Local: \t\thttp://127.0.0.1:{}\n\t" +
-						"External: \thttp://{}:{}\n----------------------------------------------------------",
-				env.getProperty("server.port"),
-				InetAddress.getLocalHost().getHostAddress(),
-				env.getProperty("server.port"));
-
-	}
-
-	/**
-	 * Set a default profile if it has not been set
-	 */
-	private static void addDefaultProfile(SpringApplication app, SimpleCommandLinePropertySource source) {
-		if (!source.containsProperty("spring.profiles.active")) {
-			app.setAdditionalProfiles(Constants.SPRING_PROFILE_DEVELOPMENT);
-		}
-	}
-
 }

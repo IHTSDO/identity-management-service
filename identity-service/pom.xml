@@ -5,81 +5,38 @@
 	<parent>
 		<artifactId>identity-management</artifactId>
 		<groupId>org.ihtsdo.otf</groupId>
-		<version>1.2.1</version>
+		<version>2.0.0-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
 	<artifactId>identity-service</artifactId>
-	<packaging>war</packaging>
+	<packaging>jar</packaging>
 
 	<name>IHTSDO Identity and SSO Service</name>
 
-	<prerequisites>
-		<maven>3.0.0</maven>
-	</prerequisites>
-
 	<properties>
-		<HikariCP.version>2.2.5</HikariCP.version>
-		<assertj-core.version>1.6.1</assertj-core.version>
-		<awaitility.version>1.4.0</awaitility.version>
-		<commons-io.version>2.4</commons-io.version>
-		<commons-lang.version>2.6</commons-lang.version>
-		<gatling-maven-plugin.version>2.1.2</gatling-maven-plugin.version>
-		<gatling.version>2.1.4</gatling.version>
-		<hibernate.version>4.3.6.Final</hibernate.version>
-		<java.version>1.7</java.version>
-		<javax.inject.version>1</javax.inject.version>
-		<joda-time-hibernate.version>1.3</joda-time-hibernate.version>
-		<json-path.version>0.9.1</json-path.version>
-		<maven-enforcer-plugin.version>1.3.1</maven-enforcer-plugin.version>
-		<maven-sortpom-plugin.version>2.3.0</maven-sortpom-plugin.version>
-		<maven.build.timestamp.format>yyyyMMddHHmmss</maven.build.timestamp.format>
-		<metrics-spark-reporter.version>1.2</metrics-spark-reporter.version>
-		<metrics-spring.version>3.0.3</metrics-spring.version>
-		<run.addResources>false</run.addResources>
-		<sonar-maven-plugin.version>2.3</sonar-maven-plugin.version>
-		<swagger-springmvc.version>0.9.5</swagger-springmvc.version>
-		<usertype-core.version>3.2.0.GA</usertype-core.version>
-
-		<execFinalName>${project.build.finalName}.war</execFinalName>
+		<swagger-springmvc.version>1.0.2</swagger-springmvc.version>
+		<execFinalName>${project.build.finalName}.jar</execFinalName>
 		<packageName>${project.build.finalName}</packageName>
-		<!-- <packageName>${project.parent.artifactId}-${project.artifactId}</packageName> -->
-
-
 	</properties>
 
 	<dependencies>
-
 		<dependency>
-			<groupId>com.fasterxml.jackson.datatype</groupId>
-			<artifactId>jackson-datatype-hibernate4</artifactId>
-			<version>${jackson.version}</version>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>com.fasterxml.jackson.datatype</groupId>
-			<artifactId>jackson-datatype-hppc</artifactId>
-			<version>${jackson.version}</version>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>com.fasterxml.jackson.datatype</groupId>
-			<artifactId>jackson-datatype-joda</artifactId>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>com.fasterxml.jackson.datatype</groupId>
-			<artifactId>jackson-datatype-json-org</artifactId>
-			<version>${jackson.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.jayway.awaitility</groupId>
-			<artifactId>awaitility</artifactId>
-			<version>${awaitility.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.jayway.jsonpath</groupId>
-			<artifactId>json-path</artifactId>
-			<version>${json-path.version}</version>
-			<scope>test</scope>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-classic</artifactId>
+			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.mangofactory</groupId>
@@ -100,123 +57,9 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
-		<dependency>
-			<groupId>commons-io</groupId>
-			<artifactId>commons-io</artifactId>
-			<version>${commons-io.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>commons-lang</groupId>
-			<artifactId>commons-lang</artifactId>
-			<version>${commons-lang.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>fr.ippon.spark.metrics</groupId>
-			<artifactId>metrics-spark-reporter</artifactId>
-			<version>${metrics-spark-reporter.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>io.gatling.highcharts</groupId>
-			<artifactId>gatling-charts-highcharts</artifactId>
-			<version>${gatling.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>javax.inject</groupId>
-			<artifactId>javax.inject</artifactId>
-			<version>${javax.inject.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>joda-time</groupId>
-			<artifactId>joda-time</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.assertj</groupId>
-			<artifactId>assertj-core</artifactId>
-			<version>${assertj-core.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.ihtsdo.otf</groupId>
-			<artifactId>ihtsdo-crowd-bridge</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.ihtsdo.otf</groupId>
-			<artifactId>ihtsdo-crowd-resources</artifactId>
-			<version>${project.version}</version>
-			<type>zip</type>
-			<classifier>resources</classifier>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.jadira.usertype</groupId>
-			<artifactId>usertype.core</artifactId>
-			<version>${usertype-core.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-context-support</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-actuator</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-autoconfigure</artifactId>
-			<version>${spring-boot.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-loader-tools</artifactId>
-			<version>${spring-boot.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-aop</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-logging</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-mail</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-security</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-thymeleaf</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
-		</dependency>
-		<!-- Spring Cloud -->
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-cloudfoundry-connector</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-localconfig-connector</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-spring-service-connector</artifactId>
-		</dependency>
 	</dependencies>
 	<build>
-	<finalName>identity-service</finalName>
+		<finalName>identity-service</finalName>
 		<resources>
 			<resource>
 				<filtering>true</filtering>
@@ -237,215 +80,10 @@
 				<directory>${project.build.directory}/generated-resources</directory>
 			</resource>
 		</resources>
-		<pluginManagement>
-			<plugins>
-				<!--This plugin's configuration is used to store Eclipse m2e settings
-				only. It has no influence on the Maven build itself.-->
-				<plugin>
-					<groupId>org.eclipse.m2e</groupId>
-					<artifactId>lifecycle-mapping</artifactId>
-					<version>1.0.0</version>
-					<configuration>
-						<lifecycleMappingMetadata>
-							<pluginExecutions>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>org.apache.maven.plugins</groupId>
-										<artifactId>maven-dependency-plugin</artifactId>
-										<versionRange>[1.0,)</versionRange>
-										<goals>
-											<goal>copy</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<execute />
-									</action>
-								</pluginExecution>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>org.apache.maven.plugins</groupId>
-										<artifactId>maven-enforcer-plugin</artifactId>
-										<versionRange>[1.0,)</versionRange>
-										<goals>
-											<goal>enforce</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<execute />
-									</action>
-								</pluginExecution>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>org.codehaus.mojo</groupId>
-										<artifactId>exec-maven-plugin</artifactId>
-										<versionRange>[1.2.1,)</versionRange>
-										<goals>
-											<goal>java</goal>
-											<goal>exec</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<ignore />
-									</action>
-								</pluginExecution>
-							</pluginExecutions>
-						</lifecycleMappingMetadata>
-					</configuration>
-				</plugin>
-			</plugins>
-		</pluginManagement>
 		<plugins>
-
-		<!--  	<plugin>
-				<groupId>com.google.code.sortpom</groupId>
-				<artifactId>maven-sortpom-plugin</artifactId>
-				<version>${maven-sortpom-plugin.version}</version>
-				<executions>
-					<execution>
-						<phase>verify</phase>
-						<goals>
-							<goal>sort</goal>
-						</goals>
-					</execution>
-				</executions>
-				<configuration>
-					<sortProperties>true</sortProperties>
-					<nrOfIndentSpace>4</nrOfIndentSpace>
-					<sortDependencies>groupId,artifactId</sortDependencies>
-					<sortPlugins>groupId,artifactId</sortPlugins>
-					<keepBlankLines>true</keepBlankLines>
-					<expandEmptyElements>false</expandEmptyElements>
-				</configuration>
-			</plugin> -->
-			<plugin>
-				<groupId>io.gatling</groupId>
-				<artifactId>gatling-maven-plugin</artifactId>
-				<version>${gatling-maven-plugin.version}</version>
-				<configuration>
-					<configFolder>src/test/gatling/conf</configFolder>
-					<dataFolder>src/test/gatling/data</dataFolder>
-					<resultsFolder>target/gatling/results</resultsFolder>
-					<bodiesFolder>src/test/gatling/bodies</bodiesFolder>
-					<simulationsFolder>src/test/gatling/simulations</simulationsFolder>
-					<!-- This will force Gatling to ask which simulation to run
-						 This is useful when you have multiple simulations -->
-					<simulationClass>*</simulationClass>
-				</configuration>
-			</plugin>
-		<!--	<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-assembly-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>identity-service-properties-files</id>
-						<phase>test</phase>
-						<goals>
-							<goal>single</goal>
-						</goals>
-						<configuration>
-							<descriptors>
-								<descriptor>src/main/assembly/assembly.xml</descriptor>
-							</descriptors>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin> -->
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-dependency-plugin</artifactId>
-				<version>2.10</version>
-				<executions>
-					<execution>
-						<id>unpack-crowd-resources</id>
-						<phase>generate-resources</phase>
-						<goals>
-							<goal>unpack-dependencies</goal>
-						</goals>
-						<configuration>
-							<outputDirectory>${project.build.directory}/generated-resources</outputDirectory>
-							<includeGroupIds>${project.groupId}</includeGroupIds>
-							<includeArtifactIds>ihtsdo-crowd-resources</includeArtifactIds>
-							<excludeArtifactIds>*</excludeArtifactIds>
-							<excludeTransitive>true</excludeTransitive>
-							<includeScope>provided</includeScope>
-							<includes>crowd*.properties,
-								application-im-common-security-config.xml,
-								applicationContext-CrowdClient.xml,
-								crowd-ehcache.xml
-							</includes>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-eclipse-plugin</artifactId>
-				<configuration>
-					<downloadSources>true</downloadSources>
-					<downloadJavadocs>true</downloadJavadocs>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-enforcer-plugin</artifactId>
-				<version>${maven-enforcer-plugin.version}</version>
-				<executions>
-					<execution>
-						<id>enforce-versions</id>
-						<goals>
-							<goal>enforce</goal>
-						</goals>
-					</execution>
-				</executions>
-				<configuration>
-					<rules>
-						<requireMavenVersion>
-							<message>You are running an older version of Maven. JHipster requires at least Maven 3.0</message>
-							<version>[3.0.0,)</version>
-						</requireMavenVersion>
-						<requireJavaVersion>
-							<message>You are running an older version of Java. JHipster requires at least JDK ${java.version}</message>
-							<version>[${java.version}.0,)</version>
-						</requireJavaVersion>
-					</rules>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-surefire-plugin</artifactId>
-				<configuration>
-					<argLine>-XX:MaxPermSize=128m -Xmx256m -DcrowdPropertiesFileLocation=${basedir}/src/test/resources/config/</argLine>
-					<!-- Force alphabetical order to have a reproducible build -->
-					<runOrder>alphabetical</runOrder>
-					<additionalClasspathElements>
-						<additionalClasspathElement>${basedir}/src/test/resources/config</additionalClasspathElement>
-					</additionalClasspathElements>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-war-plugin</artifactId>
-				<configuration>
-					<packagingExcludes>WEB-INF/lib/tomcat-*.jar,bower_components/**,bower_components</packagingExcludes>
-				</configuration>
-
-			</plugin>
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>sonar-maven-plugin</artifactId>
-				<version>${sonar-maven-plugin.version}</version>
-			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
-				<configuration>
-					<jvmArguments>-Djava.rmi.server.hostname=localhost -Xdebug
-						-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005
-					</jvmArguments>
-					<arguments>
-						<argument>--spring.profiles.active=dev</argument>
-					</arguments>
-				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.vafer</groupId>
@@ -475,25 +113,24 @@
 										<type>perm</type>
 										<prefix>/opt/${packageName}/lib/</prefix>
 										<user>identity-service</user>
-                    								<group>identity-service</group>
+										<group>identity-service</group>
 									</mapper>
 								</data>
 								<data>
 									<src>${project.basedir}/deb/supervisor.conf</src>
 									<dst>/etc/supervisor/conf.d/${packageName}.conf</dst>
 									<type>file</type>
-									<conffile>true</conffile>
 								</data>
-								<data> 
-								<src>${project.basedir}/deb/run.sh</src> 
-								<dst>/opt/${packageName}/lib/run.sh</dst> 
-									<type>file</type> 
-									<mapper> 
-									<type>perm</type> 
-									<filemode>0740</filemode> 
-   									<user>identity-service</user>
-                                                                        <group>identity-service</group>
-									</mapper> 
+								<data>
+									<src>${project.basedir}/deb/run.sh</src>
+									<dst>/opt/${packageName}/lib/run.sh</dst>
+									<type>file</type>
+									<mapper>
+										<type>perm</type>
+										<filemode>0740</filemode>
+										<user>identity-service</user>
+										<group>identity-service</group>
+									</mapper>
 								</data>
 								<data>
 									<type>template</type>
