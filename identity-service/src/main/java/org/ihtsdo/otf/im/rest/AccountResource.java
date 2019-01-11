@@ -1,5 +1,11 @@
 package org.ihtsdo.otf.im.rest;
 
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.im.rest.dto.UserDTO;
 import org.ihtsdo.otf.im.service.CrowdRestClient;
 import org.slf4j.Logger;
@@ -15,10 +21,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestClientException;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 /**
  * REST controller for managing the current user's account.
@@ -43,16 +45,6 @@ public class AccountResource {
 
 	public static final String AUTH_HEADER_PREFIX = "X-AUTH-";
 	public static final String AUTH_HEADER_USERNAME = AUTH_HEADER_PREFIX + "username";
-
-
-	private String getBaseUrl(HttpServletRequest request) {
-		String url = request.getScheme() + // "http"
-				"://" +                            // "://"
-				request.getServerName() +          // "myhost"
-				":" +                              // ":"
-				request.getServerPort();           // "80"		return null;
-		return url;
-	}
 
 	/**
 	 * GET  /authenticate -> check if the user is authenticated, and return its login.
@@ -90,7 +82,7 @@ public class AccountResource {
 	 */
 	
 	@RequestMapping(value = "/account/logout",
-			method = RequestMethod.GET)
+			method = RequestMethod.POST)
 	@ResponseStatus(HttpStatus.OK)
 	public void logout(HttpServletRequest request, HttpServletResponse response) {
 		HttpSession session = request.getSession(false);
@@ -101,6 +93,7 @@ public class AccountResource {
 		Cookie[] cookies = request.getCookies();
 		for (Cookie cookie : cookies) {
 			if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0){
+				crowdRestClient.invalidateToken(cookie.getValue());
 				cookie.setMaxAge(0);
 				cookie.setValue("");
 				cookie.setPath("/");
@@ -108,7 +101,6 @@ public class AccountResource {
 			}
 		}
 	}
-		
 	
 	/**
 	 * GET  /account -> get the current user.
@@ -117,13 +109,19 @@ public class AccountResource {
 			method = RequestMethod.GET,
 			produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseStatus(HttpStatus.OK)
-	public ResponseEntity<UserDTO> getAccount(HttpServletRequest request) {
+	public ResponseEntity<UserDTO> getAccount(HttpServletRequest request, HttpServletResponse response) {
 		try {
 			UserDTO userDTO = new UserDTO();
 	        Cookie[] cookies = request.getCookies();
 	        for (Cookie cookie : cookies) {
 	            if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
 	            	userDTO = crowdRestClient.getUserByToken(cookie.getValue());
+	            	
+	            	// Set response header
+	        		response.setHeader("Content-Type", "application/json;charset=UTF-8");
+	        		response.setHeader(AUTH_HEADER_USERNAME, userDTO.getLogin());
+	        		response.setHeader(AUTH_HEADER_PREFIX + "roles", StringUtils.join(userDTO.getRoles(), ","));
+	        		
 	            	return new ResponseEntity<UserDTO>(userDTO, HttpStatus.OK);
 	            }
 	        }
@@ -131,54 +129,6 @@ public class AccountResource {
 		} catch (RestClientException ex) {
 			return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 		}
-	}
-	
-	
-
-	/**
-	 * GET  /account -> get the current user.
-	 */
-//	@RequestMapping(value = "/account",
-//			method = RequestMethod.GET,
-//			produces = MediaType.APPLICATION_JSON_VALUE)
-//	public void getAccount(HttpServletResponse response) throws IOException {
-//		IHTSDOUser user = userRepository.getCurrentUser();
-//		if (user == null) {
-//			log.info("Current user not recovered.  Setting internal error");
-//			response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-//		}
-//		List<String> roles = new ArrayList<>();
-//		for (GrantedAuthority authority : user.getAuthorities()) {
-//			roles.add(authority.getAuthority());
-//		}
-//
-//		response.setStatus(200);
-//		response.setHeader("Content-Type", "application/json;charset=UTF-8");
-//		response.setHeader(AUTH_HEADER_USERNAME, user.getUsername());
-//		response.setHeader(AUTH_HEADER_PREFIX + "firstName", user.getFirstName());
-//		response.setHeader(AUTH_HEADER_PREFIX + "lastName", user.getLastName());
-//		response.setHeader(AUTH_HEADER_PREFIX + "emailAddress", user.getEmailAddress());
-//		response.setHeader(AUTH_HEADER_PREFIX + "langKey", user.getLangKey());
-//		response.setHeader(AUTH_HEADER_PREFIX + "roles", StringUtils.join(roles, ","));
-//
-//		UserDTO userDTO = new UserDTO(
-//				user.getUsername(),
-//				null,
-//				user.getFirstName(),
-//				user.getLastName(),
-//				user.getEmailAddress(),
-//				user.getLangKey(),
-//				roles);
-//	}
-
-	/**
-	 * POST  /logout -> filter intercepts this and logs out user
-	 */
-	@RequestMapping(value = "/logout",
-			method = RequestMethod.POST,
-			produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<?> logoutPost() {
-		return new ResponseEntity<>(HttpStatus.OK);
 	}
 
 }
