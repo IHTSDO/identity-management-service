@@ -14,8 +14,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
-		http.addFilterAfter(new CsrfCookieGeneratorFilter(), CsrfFilter.class)
-			.authorizeRequests()
+		http.authorizeRequests()
 			.antMatchers("/api/register",
 					"/api/reset_password",
 					"/api/forgot_password",
