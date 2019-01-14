@@ -15,11 +15,11 @@
 	<name>IHTSDO Identity and SSO Service</name>
 
 	<properties>
-		<swagger-springmvc.version>1.0.2</swagger-springmvc.version>
 		<execFinalName>${project.build.finalName}.jar</execFinalName>
 		<packageName>${project.build.finalName}</packageName>
 		<commons-io.version>2.4</commons-io.version>
 		<commons-lang.version>2.6</commons-lang.version>
+		<swagger-ui.version>2.8.0</swagger-ui.version>
 	</properties>
 
 	<dependencies>
@@ -51,25 +51,6 @@
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
-			<groupId>com.mangofactory</groupId>
-			<artifactId>swagger-springmvc</artifactId>
-			<version>${swagger-springmvc.version}</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>jackson-module-scala_2.10</artifactId>
-					<groupId>com.fasterxml.jackson.module</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>scalap</artifactId>
-					<groupId>org.scala-lang</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>scala-compiler</artifactId>
-					<groupId>org.scala-lang</groupId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
 			<groupId>net.sf.ehcache</groupId>
 			<artifactId>ehcache</artifactId>
 		</dependency>
@@ -84,6 +65,19 @@
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-context-support</artifactId>
 		</dependency>
+		
+		<!-- Swagger -->
+		<dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger2</artifactId>
+            <version>${swagger-ui.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger-ui</artifactId>
+            <version>${swagger-ui.version}</version>
+        </dependency>
+		
 	</dependencies>
 	<build>
 		<finalName>identity-service</finalName>
