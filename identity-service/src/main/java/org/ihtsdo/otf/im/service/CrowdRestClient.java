@@ -15,7 +15,6 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 @Service
@@ -37,7 +36,7 @@ public class CrowdRestClient {
 	public void init() {
 		restTemplate = new RestTemplateBuilder()
 				.rootUri(crowdApiUrl)
-				.basicAuthorization(crowdApiUsername, crowdApiPassword)
+				.basicAuthentication(crowdApiUsername, crowdApiPassword)
 				.build();
 	}
 
@@ -72,38 +71,33 @@ public class CrowdRestClient {
 	@Cacheable(value="accountCache", key="#token")
 	public UserDTO getUserByToken(String token){
 		UserDTO userDTO = new UserDTO();
-		try {
-			Map<String, String> params = new HashMap<>();
-			params.put("token", token);
+		Map<String, String> params = new HashMap<>();
+		params.put("token", token);
+		
+		Map result = restTemplate.getForObject("/session/{token}", Map.class, params);
+		if (null != result) {
 			
-			Map result = restTemplate.getForObject("/session/{token}", Map.class, params);
+			// Get user information
+			Map user = (Map) result.get("user");
+			userDTO.setFirstName(user.get("first-name").toString());
+			userDTO.setLastName(user.get("last-name").toString());
+			userDTO.setEmail(user.get("email").toString());
+			userDTO.setLangKey(user.get("key").toString());
+			userDTO.setLogin(user.get("name").toString());
+			
+			// Get all roles of user
+			params.clear();
+			params.put("username", user.get("name").toString());
+			result = restTemplate.getForObject("/user/group/direct?username={username}", Map.class, params);
 			if (null != result) {
-				
-				// Get user information
-				Map user = (Map) result.get("user");
-				userDTO.setFirstName(user.get("first-name").toString());
-				userDTO.setLastName(user.get("last-name").toString());
-				userDTO.setEmail(user.get("email").toString());
-				userDTO.setLangKey(user.get("key").toString());
-				userDTO.setLogin(user.get("name").toString());
-				
-				// Get all roles of user
-				params.clear();
-				params.put("username", user.get("name").toString());
-				result = restTemplate.getForObject("/user/group/direct?username={username}", Map.class, params);
-				if (null != result) {
-					ArrayList<?> arrRoles = (ArrayList<?>) result.get("groups");
-					List<String> lstRoles = new ArrayList<String>();
-					for (int i = 0; i < arrRoles.size(); i++) {
-						Map role =  (Map) arrRoles.get(i);
-						lstRoles.add(AuthoritiesConstants.ROLE_PREFIX + role.get("name"));
-					}
-					userDTO.setRoles(lstRoles);
+				ArrayList<?> arrRoles = (ArrayList<?>) result.get("groups");
+				List<String> lstRoles = new ArrayList<String>();
+				for (int i = 0; i < arrRoles.size(); i++) {
+					Map role =  (Map) arrRoles.get(i);
+					lstRoles.add(AuthoritiesConstants.ROLE_PREFIX + role.get("name"));
 				}
+				userDTO.setRoles(lstRoles);
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw e;
 		}
 		
 		return userDTO;
@@ -111,12 +105,6 @@ public class CrowdRestClient {
 	
 	@CacheEvict(value = "accountCache", key = "#token")
 	public void invalidateToken(String token) {
-		try {
-			Map<String, String> params = new HashMap<>();
-			params.put("token", token);
-			restTemplate.delete("/session/{token}", Map.class, params);		
-		}  catch (RestClientException ex) {
-			ex.printStackTrace();
-		} 
+		restTemplate.delete("/session/{token}", token);	
 	}
 }
