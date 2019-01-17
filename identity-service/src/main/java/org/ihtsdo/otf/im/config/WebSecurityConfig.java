@@ -6,7 +6,6 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.web.csrf.CsrfFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -14,18 +13,15 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
+		http.csrf().disable();
+	
 		http.authorizeRequests()
-			.antMatchers("/api/register",
-					"/api/reset_password",
-					"/api/forgot_password",
-					"/api/activate").anonymous()
-			.antMatchers("/api/pre-register-check").permitAll()
-			.antMatchers("/api/authenticate").permitAll()
-			.antMatchers("/api/account").permitAll()
-			.antMatchers("/logout").permitAll()
-			.antMatchers("/api/**").authenticated()
-			.antMatchers("/j_spring_security_logout").permitAll()
-			.antMatchers("/j_security_check").permitAll();
+			.antMatchers("/api/reset_password",
+						"/api/forgot_password").anonymous()
+			.antMatchers("/api/authenticate", 
+						"/api/account",
+						"/api/account/logout").permitAll()
+			.antMatchers("/api/**").authenticated();
 	}
 
 	@Autowired

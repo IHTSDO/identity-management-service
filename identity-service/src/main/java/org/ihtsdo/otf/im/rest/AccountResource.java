@@ -65,7 +65,10 @@ public class AccountResource {
 			produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseStatus(HttpStatus.OK)
 	public ResponseEntity<Cookie> validateUser(@RequestBody UserDTO dto, HttpServletResponse response) {
-		try {
+		if (StringUtils.isEmpty(dto.getLogin()) || StringUtils.isEmpty(dto.getPassword())) {
+			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+		}
+		try {			
 			String token = crowdRestClient.authenticate(dto.getLogin(), dto.getPassword());
 			Cookie cookie= new Cookie(cookieName, token);
 			cookie.setMaxAge(cookieMaxAge);
@@ -73,7 +76,8 @@ public class AccountResource {
 			response.addCookie(cookie);
 			return new ResponseEntity<Cookie>(cookie, HttpStatus.OK);
 		} catch (RestClientException ex) {
-			return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+			ex.printStackTrace();
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
 	}
 	
@@ -92,8 +96,16 @@ public class AccountResource {
 
 		Cookie[] cookies = request.getCookies();
 		for (Cookie cookie : cookies) {
-			if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0){
-				crowdRestClient.invalidateToken(cookie.getValue());
+			if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
+				if (StringUtils.isNotEmpty(cookie.getValue())) {
+					try {
+						crowdRestClient.invalidateToken(cookie.getValue());
+					} catch (RestClientException ex) {
+						log.error("Token {} is not valid", cookie.getValue());
+					}
+				}
+				
+				// invalidate cookie
 				cookie.setMaxAge(0);
 				cookie.setValue("");
 				cookie.setPath("/");
@@ -110,12 +122,24 @@ public class AccountResource {
 			produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseStatus(HttpStatus.OK)
 	public ResponseEntity<UserDTO> getAccount(HttpServletRequest request, HttpServletResponse response) {
-		try {
-			UserDTO userDTO = new UserDTO();
-	        Cookie[] cookies = request.getCookies();
-	        for (Cookie cookie : cookies) {
+		UserDTO userDTO = new UserDTO();
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+        	for (Cookie cookie : cookies) {
 	            if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
-	            	userDTO = crowdRestClient.getUserByToken(cookie.getValue());
+	            	try {
+	            		userDTO = crowdRestClient.getUserByToken(cookie.getValue());
+	            	} catch  (RestClientException ex) {
+	        			ex.printStackTrace();
+	        			
+	        			// invalidate cookie
+	    				cookie.setMaxAge(0);
+	    				cookie.setValue("");
+	    				cookie.setPath("/");
+	    				response.addCookie(cookie);
+	    				
+	        			return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+	        		}
 	            	
 	            	// Set response header
 	        		response.setHeader("Content-Type", "application/json;charset=UTF-8");
@@ -125,10 +149,9 @@ public class AccountResource {
 	            	return new ResponseEntity<UserDTO>(userDTO, HttpStatus.OK);
 	            }
 	        }
-	        return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-		} catch (RestClientException ex) {
-			return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-		}
+        }
+        
+        return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 	}
 
 }
