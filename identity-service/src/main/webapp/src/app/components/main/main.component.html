@@ -1,0 +1,59 @@
+<div>
+    <div class="center-block w-form-contain-small">    
+      <div >
+          <div class="alert alert-info light-blue-900" *ngIf="isAuthenticated !== undefined && !isAuthenticated" > 
+            <div class="large-icon"><span class="fa fa-user"></span></div>
+            <div class="alert-text">Welcome to SNOMED International Tools! <br> Already have an account?<br> <a routerLink="/login">Log in</a></div>
+          </div>
+            
+          <!-- new -->
+          <div  class="p-v-lg text-center login-footer col-md-12 no-padding m-t-15" *ngIf="isAuthenticated !== undefined && !isAuthenticated">              
+              <div class="link-space col-md-12 no-padding ">No account yet? <a href="http://snomed.org/accounts">Register a new account</a></div>
+          </div>        
+                         
+          <div class="servicesavail" *ngIf="isAuthenticated">
+              <div class="p-a-md box-color border-radius box-shadow-form text-color ">
+                <div class="item">
+                  <div class="item-bg dark h6">
+                    <p class="p-a text-center">Welcome to SNOMED International Tools!</p>
+                  </div>
+                  <div class="p-a p-y-lg pos-rlt text-center">
+                    <div class="img-circle w-56 lighter" ><span class="fa fa-th-list"></span></div>
+                  </div>
+                </div>  
+             
+                <div class="clearfix"></div>
+                <div class="box" *ngIf="isScaAuthor">
+                <div class="image-header col-md-12 no-padding clearfix">     
+                  <img class="img-responsive pull-left" src="../assets/images/sca-small.jpg" alt="IHTSDO" width="100%" height="auto">
+                </div>
+                <div class="box-header lighter text-center col-md-12 no-padding "> 
+                  <h3><a href="{{sca_service}}">Single Concept Authoring Service</a> </h3>
+                </div>
+                <div class="box-body">
+                  <div class="col-md-12 no-padding clearfix">
+                  <p class="m-t-10 textcenter">The Single Concept Authoring Tool (SCA) is an easy to use web-solution that is designed for SNOMED CT authoring and managing authoring tasks. </p>
+                </div>
+               <div class="row col-md-12 no-padding m-t-10 m-r-0 m-l-0">
+                  <a class="col-md-6 p-l-0" href="{{sca_service}}">
+                    <div class="no-padding">
+                      <button class="btn info btn-icons btn-outline "><i class="fa fa-list-alt float-left"></i> Launch the App</button>
+                    </div>
+                  </a>
+                  <a class="col-md-6 p-r-0 p-l-0 float-right" href="https://confluence.ihtsdotools.org/display/ISUG/IHTSDO+SCA+User+Guide" target="_blank">
+                    <div class="no-padding">
+                      <button class="btn info btn-icons btn-outline "><i class="fa fa-life-saver float-left"></i> View the User Guide</button>
+                    </div>
+                  </a>
+                  </div>
+                  <div class="clearfix"></div>
+                </div>              
+              </div>
+            </div>
+          </div>
+        <!-- end links--> 
+      </div>       
+    </div>
+</div>
+
+  
