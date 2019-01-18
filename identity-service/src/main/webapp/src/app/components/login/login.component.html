@@ -1,0 +1,54 @@
+<div>
+    <div class="center-block w-form-contain-small">
+        <div class="item">
+            <div class="item-bg dark h6">
+                <p class="p-a text-center">Please Log In</p></div>
+                <div class="p-a p-y-lg pos-rlt text-center">
+                <div class="img-circle w-56 lighter" ><span class="fa fa-user"></span></div>
+            </div>
+        </div>
+        <div class="p-a-md box-color border-radius box-shadow-form text-color login-sign-in ">
+              
+            <div class="alert alert-danger" [hidden]="!authenticationError">
+                <strong>Sorry, we had a problem authenticating your credentials.</strong> Please check them and try again.
+            </div>
+        
+            <div class="alert alert-danger" [hidden]="!forbiddenError">
+                <strong>Sorry, we had a problem with your browser session cookie.</strong> Please refresh your page to remove old cookies and try again.
+            </div>
+             
+            <div class="form-group">
+                <form [formGroup]="messsageForm" (ngSubmit)="doLogin()" class="form" role="form" >
+                    <div class="form-group">
+                        <label for="username">Account name</label>
+                        <input type="text" class="form-control" id="username" name="username" placeholder="Your account name" formControlName="username" autofocus>
+                        <div class="alert alert-danger m-t-5" *ngIf="formSubmit && messsageForm.controls.username.errors && messsageForm.controls.username.errors.required">
+                            Account nane is required
+                        </div>                   
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" placeholder="Your password" formControlName="password">
+                        <div class="alert alert-danger m-t-5" *ngIf="formSubmit && messsageForm.controls.password.errors && messsageForm.controls.password.errors.required">
+                            Password is required
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="rememberMe">
+                            <input type="checkbox" id="rememberMe"  name="rememberMe" formControlName="rememberMe" checked>
+                            Automatic log in
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Log In</button>
+                </form>
+            </div>
+        </div>
+      
+        <!-- new -->
+        <div class="p-v-lg text-center login-footer col-md-12 no-padding m-t-15">
+            <div class="link-space col-md-12 no-padding ">No account yet? <a href="http://snomed.org/accounts">Register a new account</a></div>
+        </div>
+        <!-- end links--> 
+    </div>
+</div>
+ 
