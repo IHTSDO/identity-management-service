@@ -59,13 +59,13 @@
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-context</artifactId>
 		</dependency>
-	
+
 		<!-- Support for Ehcache and others -->
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-context-support</artifactId>
 		</dependency>
-		
+
 		<!-- Swagger -->
 		<dependency>
             <groupId>io.springfox</groupId>
@@ -77,7 +77,7 @@
             <artifactId>springfox-swagger-ui</artifactId>
             <version>${swagger-ui.version}</version>
         </dependency>
-		
+
 	</dependencies>
 	<build>
 		<finalName>identity-service</finalName>
@@ -188,178 +188,4 @@
 			</plugin>
 		</plugins>
 	</build>
-
-	<profiles>
-		<profile>
-			<id>dev</id>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>com.github.trecloux</groupId>
-						<artifactId>yeoman-maven-plugin</artifactId>
-						<version>0.4</version>
-						<executions>
-							<execution>
-								<id>run-frontend-build</id>
-								<phase>generate-resources</phase>
-								<goals>
-									<goal>build</goal>
-								</goals>
-								<configuration>
-									<buildTool>grunt</buildTool>
-									<buildArgs>devbuild --force --no-color</buildArgs>
-								</configuration>
-							</execution>
-						</executions>
-						<configuration>
-							<yeomanProjectDirectory>${project.basedir}</yeomanProjectDirectory>
-						</configuration>
-					</plugin>
-				</plugins>
-			</build>
-			<properties>
-				<!-- log configuration -->
-				<logback.loglevel>INFO</logback.loglevel>
-			</properties>
-			<dependencies>
-				<dependency>
-					<groupId>org.springframework.boot</groupId>
-					<artifactId>spring-boot-starter-tomcat</artifactId>
-					<scope>provided</scope>
-				</dependency>
-			</dependencies>
-		</profile>
-
-		<profile>
-			<id>prod</id>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>com.github.trecloux</groupId>
-						<artifactId>yeoman-maven-plugin</artifactId>
-						<version>0.4</version>
-						<executions>
-							<execution>
-								<id>run-frontend-build</id>
-								<phase>generate-resources</phase>
-								<goals>
-									<goal>build</goal>
-								</goals>
-								<configuration>
-									<buildTool>grunt</buildTool>
-									<buildArgs>build --force --no-color</buildArgs>
-								</configuration>
-							</execution>
-						</executions>
-						<configuration>
-							<yeomanProjectDirectory>${project.basedir}</yeomanProjectDirectory>
-						</configuration>
-					</plugin>
-					<plugin>
-						<artifactId>maven-clean-plugin</artifactId>
-						<version>2.5</version>
-						<configuration>
-							<filesets>
-								<fileset>
-									<directory>src/main/webapp/dist</directory>
-								</fileset>
-								<fileset>
-									<directory>.tmp</directory>
-								</fileset>
-								<fileset>
-									<directory>node_modules</directory>
-								</fileset>
-							</filesets>
-						</configuration>
-					</plugin>
-					<plugin>
-						<groupId>org.springframework.boot</groupId>
-						<artifactId>spring-boot-maven-plugin</artifactId>
-						<configuration>
-							<arguments>
-								<argument>--spring.profiles.active=prod</argument>
-							</arguments>
-						</configuration>
-					</plugin>
-
-				</plugins>
-			</build>
-			<properties>
-				<!-- log configuration -->
-				<logback.loglevel>INFO</logback.loglevel>
-			</properties>
-			<dependencies>
-				<dependency>
-					<groupId>org.springframework.boot</groupId>
-					<artifactId>spring-boot-starter-tomcat</artifactId>
-					<scope>provided</scope>
-				</dependency>
-			</dependencies>
-		</profile>
-		<profile>
-			<id>uat</id>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>com.github.trecloux</groupId>
-						<artifactId>yeoman-maven-plugin</artifactId>
-						<version>0.4</version>
-						<executions>
-							<execution>
-								<id>run-frontend-build</id>
-								<phase>generate-resources</phase>
-								<goals>
-									<goal>build</goal>
-								</goals>
-								<configuration>
-									<buildTool>grunt</buildTool>
-									<buildArgs>uatbuild --force --no-color</buildArgs>
-								</configuration>
-							</execution>
-						</executions>
-						<configuration>
-							<yeomanProjectDirectory>${project.basedir}</yeomanProjectDirectory>
-						</configuration>
-					</plugin>
-					<plugin>
-						<artifactId>maven-clean-plugin</artifactId>
-						<version>2.5</version>
-						<configuration>
-							<filesets>
-								<fileset>
-									<directory>src/main/webapp/dist</directory>
-								</fileset>
-								<fileset>
-									<directory>.tmp</directory>
-								</fileset>
-								<fileset>
-									<directory>node_modules</directory>
-								</fileset>
-							</filesets>
-						</configuration>
-					</plugin>
-					<plugin>
-						<groupId>org.springframework.boot</groupId>
-						<artifactId>spring-boot-maven-plugin</artifactId>
-						<configuration>
-							<arguments>
-								<argument>--spring.profiles.active=uat</argument>
-							</arguments>
-						</configuration>
-					</plugin>
-				</plugins>
-			</build>
-			<properties>
-				<!-- log configuration -->
-				<logback.loglevel>INFO</logback.loglevel>
-			</properties>
-			<dependencies>
-				<dependency>
-					<groupId>org.springframework.boot</groupId>
-					<artifactId>spring-boot-starter-tomcat</artifactId>
-					<scope>provided</scope>
-				</dependency>
-			</dependencies>
-		</profile>
-	</profiles>
 </project>
