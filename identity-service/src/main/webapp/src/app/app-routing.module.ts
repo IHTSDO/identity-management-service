@@ -5,15 +5,16 @@ import { LoginComponent } from './components/login/login.component';
 import { LogoutComponent } from './components/logout/logout.component';
 
 const routes: Routes = [
-  {path:'', component: MainComponent},
-  {path:'login', component: LoginComponent, pathMatch: 'full'},
-  {path:'login?serviceReferer=', component: LoginComponent, pathMatch: 'full'},
-  {path:'logout', component: LogoutComponent, pathMatch: 'full'},
-  {path:'logout?serviceReferer=', component: LogoutComponent, pathMatch: 'full'}
+    {path: '', component: MainComponent},
+    {path: 'login', component: LoginComponent, pathMatch: 'full'},
+    {path: 'login?serviceReferer=', component: LoginComponent, pathMatch: 'full'},
+    {path: 'logout', component: LogoutComponent, pathMatch: 'full'},
+    {path: 'logout?serviceReferer=', component: LogoutComponent, pathMatch: 'full'}
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule]
+    imports: [RouterModule.forRoot(routes)],
+    exports: [RouterModule]
 })
-export class AppRoutingModule { }
+export class AppRoutingModule {
+}
