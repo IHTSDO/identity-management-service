@@ -1,42 +1,43 @@
 <nav class="navbar navbar-expand-md navbar-default no-padding" role="navigation">
     <div class="container">
         <div class="navbar-header">
-          <a class="navbar-brand" href=""> 
+          <a class="navbar-brand" href="">
             <div id="logo">
               <img class="img-responsive float-left" src="../assets/images/small_logo.png" alt="SNOMED International" width="40" height="40">
             </div>
-            <span class="float-left m-l-10">SNOMED International Tools</span> 
+            <span class="float-left m-l-10">SNOMED International Tools</span>
           </a>
 
-          <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse"> </button> 
+          <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse"> </button>
         </div>
         <div class="collapse navbar-collapse" id="navbar-collapse">
-            <ul class="navbar-nav ml-auto">                                
+            <ul class="navbar-nav ml-auto">
                 <li class="nav-item dropdown" *ngIf="isAuthenticated !== undefined && !isAdmin">
                     <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">
-                        <span>                            
-                            <span class="hidden-tablet"> My Account </span>                            
-                        </span>
+                        <span><span class="hidden-tablet"> My Account </span></span>
                     </a>
-                    <div class="dropdown-menu">                       
-                        <li ui-sref-active="active" *ngIf="isAuthenticated"><a href="#" (click)="logout()">
-                            &#xA0;<span>Log out</span></a></li>
-                        <li ui-sref-active="active" *ngIf="!isAuthenticated"><a routerLink="/login">
-                            &#xA0;<span >Login</span></a></li>
-                        <li ui-sref-active="active" *ngIf="!isAuthenticated"><a href="http://snomed.org/accounts">
-                            &#xA0;<span>Register</span></a></li>
+                    <div class="dropdown-menu">
+                        <li ui-sref-active="active" *ngIf="isAuthenticated">
+                            <a href="#" (click)="logout()">&#xA0;<span>Log out</span></a>
+                        </li>
+                        <li ui-sref-active="active" *ngIf="!isAuthenticated">
+                            <a routerLink="/login">&#xA0;<span>Login</span></a>
+                        </li>
+                        <li ui-sref-active="active" *ngIf="!isAuthenticated">
+                            <a href="http://snomed.org/accounts">&#xA0;<span>Register</span></a>
+                        </li>
                     </div>
                 </li>
                 <li *ngIf="isAuthenticated && isAdmin" class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">
-                        <span>                            
+                        <span>
                             <span class="hidden-tablet">Administration</span>
                             <b class="caret"></b>
                         </span>
                     </a>
-                    <ul class="dropdown-menu">                        
+                    <ul class="dropdown-menu">
                         <li ui-sref-active="active" *ngIf="isAuthenticated"><a href="#" (click)="logout()">
-                                &#xA0;<span>Log out</span></a></li>                    
+                                &#xA0;<span>Log out</span></a></li>
                     </ul>
                 </li>
             </ul>
