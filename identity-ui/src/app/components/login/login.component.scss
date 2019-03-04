@@ -1,0 +1,45 @@
+@import "~src/variables";
+
+div#login {
+    color: white;
+
+    div.login-header {
+        background-color: $cinder-blue;
+        z-index: 1;
+
+        div.user-icon {
+            background-color: $charade-blue;
+            width: 4rem;
+            height: 4rem;
+            line-height: 4rem;
+            display: inline-block;
+            transform: translateY(2rem);
+            font-size: 1.8rem;
+        }
+    }
+
+    div.login-body {
+        background-color: $gallery-white;
+        color: $charade-blue;
+
+        form {
+            div.form-check {
+                input {
+                    font-size: 1.6rem;
+                    cursor: text;
+                }
+            }
+
+            button {
+                cursor: pointer;
+                font-size: 1.6rem;
+            }
+        }
+    }
+
+    div.login-footer {
+        p {
+            color: $alto-white;
+        }
+    }
+}
