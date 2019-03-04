@@ -1,53 +1,32 @@
-<div>
-    <div class="center-block w-form-contain-small">
-        <div class="item">
-            <div class="item-bg dark h6">
-                <p class="p-a text-center">Please Log In</p></div>
-                <div class="p-a p-y-lg pos-rlt text-center">
-                <div class="img-circle w-56 lighter" ><span class="fa fa-user"></span></div>
-            </div>
+<div id="login" class="container">
+    <div class="row justify-content-center">
+        <div class="col-5 text-center login-header">
+            <h2 class="px-5 pt-5 mb-0">Enter Login</h2>
+            <div class="user-icon rounded-circle text-center"><span class="fa fa-user"></span></div>
         </div>
-        <div class="p-a-md box-color border-radius box-shadow-form text-color login-sign-in ">
-
-            <div class="alert alert-danger" [hidden]="!authenticationError">
-                <strong>Sorry, we had a problem authenticating your credentials.</strong> Please check them and try again.
-            </div>
-
-            <div class="alert alert-danger" [hidden]="!forbiddenError">
-                <strong>Sorry, we had a problem with your browser session cookie.</strong> Please refresh your page to remove old cookies and try again.
-            </div>
-
-            <div class="form-group">
-                <form [formGroup]="messageForm" (ngSubmit)="doLogin()" class="form" role="form" >
-                    <div class="form-group">
-                        <label for="username">Account name</label>
-                        <input type="text" class="form-control" id="username" name="username" placeholder="Your account name" formControlName="username" autofocus>
-                        <div class="alert alert-danger m-t-5" *ngIf="formSubmit && messageForm.controls.username.errors && messageForm.controls.username.errors.required">
-                            Account nane is required
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" placeholder="Your password" formControlName="password">
-                        <div class="alert alert-danger m-t-5" *ngIf="formSubmit && messageForm.controls.password.errors && messageForm.controls.password.errors.required">
-                            Password is required
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="rememberMe">
-                            <input type="checkbox" id="rememberMe"  name="rememberMe" formControlName="rememberMe" checked>
-                            Automatic log in
-                        </label>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Log In</button>
-                </form>
-            </div>
+        <div class="w-100"></div>
+        <div class="col-5 login-body p-5">
+            <form [formGroup]="messageForm" (ngSubmit)="doLogin()" role="form">
+                <div class="form-group">
+                    <label for="username">Account Name</label>
+                    <input type="text" class="form-control" id="username" placeholder="Your account name">
+                    <small *ngIf="formSubmit && messageForm.controls.username.errors && messageForm.controls.username.errors.required" id="usernameHelp" class="form-text text-muted">Account name is required</small>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" class="form-control" id="password" placeholder="Your password">
+                    <small *ngIf="formSubmit && messageForm.controls.password.errors && messageForm.controls.password.errors.required" id="passwordHelp" class="form-text text-muted">Password is required</small>
+                </div>
+                <div class="form-check pb-3">
+                    <input type="checkbox" class="form-check-input" id="rememberMe" checked>
+                    <label class="form-check-label pl-3" for="rememberMe">Remember me</label>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block p-2">Log In</button>
+            </form>
         </div>
-
-        <!-- new -->
-        <div class="p-v-lg text-center login-footer col-md-12 no-padding m-t-15">
-            <div class="link-space col-md-12 no-padding ">No account yet? <a href="http://snomed.org/accounts">Register a new account</a></div>
+        <div class="w-100"></div>
+        <div class="col-5 text-center login-footer pt-5">
+            <p>No account yet? <a href="http://snomed.org/accounts">Register a new account</a></p>
         </div>
-        <!-- end links-->
     </div>
 </div>

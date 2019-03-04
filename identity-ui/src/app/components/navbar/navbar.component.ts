@@ -12,10 +12,10 @@ export class NavbarComponent implements OnInit {
 
     isAuthenticated: Boolean = undefined;
     isAdmin: Boolean = undefined;
+    environment: string;
 
-    constructor(private principle: PrincipleService,
-                private auth: AuthenticationService,
-                private router: Router) {
+    constructor(private principle: PrincipleService, private auth: AuthenticationService, private router: Router) {
+        this.environment = window.location.host.split(/[.]/)[0].split(/[-]/)[0];
     }
 
     ngOnInit() {
@@ -34,6 +34,5 @@ export class NavbarComponent implements OnInit {
         this.auth.logout().then(() => {
             this.router.navigate(['login']);
         });
-
     }
 }

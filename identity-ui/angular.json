@@ -25,11 +25,15 @@
             "assets": [
               "src/assets"
             ],
-            "styles": [            
-              "src/styles.scss"
+            "styles": [
+              "src/styles.scss",
+              "./node_modules/bootstrap/dist/css/bootstrap.min.css"
             ],
-            "scripts": ["node_modules/jquery/dist/jquery.min.js",
-                        "node_modules/bootstrap/dist/js/bootstrap.min.js"]
+            "scripts": [
+              "./node_modules/jquery/dist/jquery.min.js",
+              "./node_modules/popper.js/dist/umd/popper.min.js",
+              "./node_modules/bootstrap/dist/js/bootstrap.min.js"
+            ]
           },
           "configurations": {
             "production": {
@@ -85,7 +89,9 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "identity-ui:build"
+            "browserTarget": "identity-ui:build",
+            "liveReload": false,
+            "baseHref": "/"
           },
           "configurations": {
             "production": {
@@ -147,7 +153,7 @@
           "configurations": {
             "production": {
               "devServerTarget": "identity-ui:serve:production"
-            }            
+            }
           }
         },
         "lint": {

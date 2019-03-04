@@ -1,16 +1,9 @@
 <!--[if lt IE 10]>
     <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
 <![endif]-->
-<div *ngIf="env === 'dev'" class="development"></div>
-<div *ngIf="env === 'uat'" class="uat"></div>
+
 <app-navbar></app-navbar>
 
-<div class="container">
-    <div class=" m-t-20">
-        <router-outlet></router-outlet>
-    </div>
-    
-    <div class="p-v-lg text-center col-md-12 no-padding m-t-15">
-        <p>Copyright © 2019 SNOMED International</p>
-    </div>
-</div>
+<div class="mb-5"></div>
+<router-outlet></router-outlet>
+<p class="copyright text-center">Copyright © 2019 SNOMED International</p>
