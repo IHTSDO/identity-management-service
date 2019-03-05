@@ -1,80 +1,81 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-	<parent>
-		<artifactId>spring-boot-starter-parent</artifactId>
-		<groupId>org.springframework.boot</groupId>
-		<version>2.1.2.RELEASE</version>
-		<relativePath />
-	</parent>
+    <parent>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <groupId>org.springframework.boot</groupId>
+        <version>2.1.2.RELEASE</version>
+        <relativePath/>
+    </parent>
 
-	<groupId>org.ihtsdo.otf</groupId>
-	<artifactId>identity-management</artifactId>
-	<version>2.0.0-SNAPSHOT</version>
-	<packaging>pom</packaging>
+    <groupId>org.ihtsdo.otf</groupId>
+    <artifactId>identity-management</artifactId>
+    <version>2.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
 
-	<name>IHTSDO Identity and SSO Service</name>
-	<url>http://www.ihtsdo.org/</url>
+    <name>IHTSDO IMS Parent Wrapper</name>
+    <url>http://www.ihtsdo.org/</url>
 
-	<organization>
-		<name>IHTSDO</name>
-		<url>http://www.ihtsdo.org/</url>
-	</organization>
+    <organization>
+        <name>IHTSDO</name>
+        <url>http://www.ihtsdo.org/</url>
+    </organization>
 
-	<licenses>
-		<license>
-			<name>The Apache Software License, Version 2.0</name>
-			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-			<distribution>repo</distribution>
-		</license>
-	</licenses>
-	<scm>
-		<connection>scm:git:git@git.ihtsdotools.org:ihtsdo/identity-management.git</connection>
-		<url>https://git.ihtsdotools.org/ihtsdo/identity-management.git</url>
-	</scm>
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    <scm>
+        <connection>scm:git:git@git.ihtsdotools.org:ihtsdo/identity-management.git</connection>
+        <url>https://git.ihtsdotools.org/ihtsdo/identity-management.git</url>
+    </scm>
 
-	<prerequisites>
-		<maven>3.0.0</maven>
-	</prerequisites>
+    <prerequisites>
+        <maven>3.0.0</maven>
+    </prerequisites>
 
-	<modules>
-		<module>identity-service</module>
-		<module>identity-ui</module>
-	</modules>
+    <modules>
+        <module>identity-service</module>
+        <module>identity-ui</module>
+    </modules>
 
-	<properties>
-		<java.version>1.8</java.version>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<maven.compiler.source>${java.version}</maven.compiler.source>
-		<maven.compiler.target>${java.version}</maven.compiler.target>
-	</properties>
+    <properties>
+        <java.version>1.8</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+    </properties>
 
-	<distributionManagement>
-		<repository>
-			<id>ihtsdo-public-nexus</id>
-			<name>IHTSDO Public Nexus Releases</name>
-			<url>https://maven.ihtsdotools.org/content/repositories/releases/</url>
-		</repository>
-		<snapshotRepository>
-			<id>ihtsdo-public-nexus</id>
-			<name>IHTSDO Public Nexus Snapshots</name>
-			<url>https://maven.ihtsdotools.org/content/repositories/snapshots/</url>
-		</snapshotRepository>
-	</distributionManagement>
+    <distributionManagement>
+        <repository>
+            <id>ihtsdo-public-nexus</id>
+            <name>IHTSDO Public Nexus Releases</name>
+            <url>https://maven.ihtsdotools.org/content/repositories/releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>ihtsdo-public-nexus</id>
+            <name>IHTSDO Public Nexus Snapshots</name>
+            <url>https://maven.ihtsdotools.org/content/repositories/snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
 
-	<repositories>
-		<repository>
-			<id>ihtsdo-public-nexus</id>
-			<name>IHTSDO Public Nexus Releases</name>
-			<url>https://maven.ihtsdotools.org/content/repositories/releases/</url>
-		</repository>
-		<repository>
-			<id>ihtsdo-atlassian-public-nexus</id>
-			<name>IHTSDO Public Nexus Releases</name>
-			<url>https://maven.ihtsdotools.org/content/repositories/Atlassian/</url>
-		</repository>
-	</repositories>
+    <repositories>
+        <repository>
+            <id>ihtsdo-public-nexus</id>
+            <name>IHTSDO Public Nexus Releases</name>
+            <url>https://maven.ihtsdotools.org/content/repositories/releases/</url>
+        </repository>
+        <repository>
+            <id>ihtsdo-atlassian-public-nexus</id>
+            <name>IHTSDO Public Nexus Releases</name>
+            <url>https://maven.ihtsdotools.org/content/repositories/Atlassian/</url>
+        </repository>
+    </repositories>
 
 </project>
