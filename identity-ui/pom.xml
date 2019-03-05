@@ -12,6 +12,8 @@
     <artifactId>identity-ui</artifactId>
     <packaging>jar</packaging>
 
+    <name>IHTSDO Identity Management UI</name>
+
     <properties>
         <packageName>${project.artifactId}</packageName>
     </properties>

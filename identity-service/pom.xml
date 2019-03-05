@@ -12,7 +12,7 @@
 	<artifactId>identity-service</artifactId>
 	<packaging>jar</packaging>
 
-	<name>IHTSDO Identity and SSO Service</name>
+	<name>IHTSDO Identity Management Service + UI</name>
 
 	<properties>
 		<execFinalName>${project.build.finalName}.jar</execFinalName>
