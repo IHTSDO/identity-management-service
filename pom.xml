@@ -40,8 +40,8 @@
     </prerequisites>
 
     <modules>
-        <module>identity-service</module>
         <module>identity-ui</module>
+        <module>identity-service</module>
     </modules>
 
     <properties>
