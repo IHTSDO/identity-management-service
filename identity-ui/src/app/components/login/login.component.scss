@@ -23,6 +23,11 @@ div#login {
         color: $charade-blue;
 
         form {
+            div.form-group {
+                input {
+                    font-size: 1.6rem;
+                }
+            }
             div.form-check {
                 input {
                     font-size: 1.6rem;
