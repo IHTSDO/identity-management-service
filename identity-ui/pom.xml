@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>identity-ui</artifactId>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging>
 
     <name>IHTSDO Identity Management UI</name>
 
