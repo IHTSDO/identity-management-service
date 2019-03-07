@@ -9,16 +9,16 @@
             <form [formGroup]="messageForm" (ngSubmit)="doLogin()" role="form">
                 <div class="form-group">
                     <label for="username">Account Name</label>
-                    <input type="text" class="form-control" id="username" placeholder="Your account name">
+                    <input type="text" class="form-control" id="username" placeholder="Your account name" formControlName="username" autofocus>
                     <small *ngIf="formSubmit && messageForm.controls.username.errors && messageForm.controls.username.errors.required" id="usernameHelp" class="form-text text-muted">Account name is required</small>
                 </div>
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" class="form-control" id="password" placeholder="Your password">
+                    <input type="password" class="form-control" id="password" placeholder="Your password" formControlName="password">
                     <small *ngIf="formSubmit && messageForm.controls.password.errors && messageForm.controls.password.errors.required" id="passwordHelp" class="form-text text-muted">Password is required</small>
                 </div>
                 <div class="form-check pb-3">
-                    <input type="checkbox" class="form-check-input" id="rememberMe" checked>
+                    <input type="checkbox" class="form-check-input" id="rememberMe" formControlName="rememberMe" checked>
                     <label class="form-check-label pl-3" for="rememberMe">Remember me</label>
                 </div>
                 <button type="submit" class="btn btn-primary btn-block p-2">Log In</button>
