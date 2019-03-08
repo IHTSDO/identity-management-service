@@ -64,7 +64,7 @@ public class AccountResource {
 			method = RequestMethod.POST,
 			produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseStatus(HttpStatus.OK)
-	public ResponseEntity<Cookie> validateUser(@RequestBody UserDTO dto, HttpServletResponse response) {
+	public ResponseEntity<Void> validateUser(@RequestBody UserDTO dto, HttpServletResponse response) {
 		if (StringUtils.isEmpty(dto.getLogin()) || StringUtils.isEmpty(dto.getPassword())) {
 			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 		}
@@ -73,8 +73,9 @@ public class AccountResource {
 			Cookie cookie= new Cookie(cookieName, token);
 			cookie.setMaxAge(cookieMaxAge);
 			cookie.setDomain(cookieDomain);
+			cookie.setPath("/");
 			response.addCookie(cookie);
-			return new ResponseEntity<Cookie>(cookie, HttpStatus.OK);
+			return new ResponseEntity<>(HttpStatus.OK);
 		} catch (RestClientException ex) {
 			ex.printStackTrace();
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
