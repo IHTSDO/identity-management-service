@@ -6,6 +6,7 @@ import { LogoutComponent } from './components/logout/logout.component';
 
 const routes: Routes = [
     {path: '', component: MainComponent},
+    {path: 'home', component: MainComponent},
     {path: 'login', component: LoginComponent, pathMatch: 'full'},
     {path: 'login?serviceReferer=', component: LoginComponent, pathMatch: 'full'},
     {path: 'logout', component: LogoutComponent, pathMatch: 'full'},
@@ -13,7 +14,7 @@ const routes: Routes = [
 ];
 
 @NgModule({
-    imports: [RouterModule.forRoot(routes)],
+    imports: [RouterModule.forRoot(routes, {useHash: true})],
     exports: [RouterModule]
 })
 export class AppRoutingModule {
