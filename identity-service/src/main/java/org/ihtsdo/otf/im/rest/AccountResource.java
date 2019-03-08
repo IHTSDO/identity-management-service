@@ -122,7 +122,7 @@ public class AccountResource {
 			produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseStatus(HttpStatus.OK)
 	public ResponseEntity<UserDTO> getAccount(HttpServletRequest request, HttpServletResponse response) {
-		UserDTO userDTO = new UserDTO();
+		UserDTO userDTO;
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
         	for (Cookie cookie : cookies) {
@@ -138,7 +138,7 @@ public class AccountResource {
 	    				cookie.setPath("/");
 	    				response.addCookie(cookie);
 	    				
-	        			return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+	        			return new ResponseEntity<>(HttpStatus.FORBIDDEN);
 	        		}
 	            	
 	            	// Set response header
@@ -151,7 +151,7 @@ public class AccountResource {
 	        }
         }
         
-        return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        return new ResponseEntity<>(HttpStatus.FORBIDDEN);
 	}
 
 }
