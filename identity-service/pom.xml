@@ -171,17 +171,6 @@
                                     <type>file</type>
                                 </data>
                                 <data>
-                                    <src>${project.basedir}/deb/run.sh</src>
-                                    <dst>/opt/${packageName}/lib/run.sh</dst>
-                                    <type>file</type>
-                                    <mapper>
-                                        <type>perm</type>
-                                        <filemode>0740</filemode>
-                                        <user>identity-service</user>
-                                        <group>identity-service</group>
-                                    </mapper>
-                                </data>
-                                <data>
                                     <type>template</type>
                                     <paths>
                                         <path>/etc/opt/${packageName}</path>
