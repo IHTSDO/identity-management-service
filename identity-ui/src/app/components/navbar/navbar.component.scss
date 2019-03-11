@@ -61,6 +61,8 @@ nav#navbar {
 
     div.dropdown {
         button {
+            height: 4.5rem;
+            margin-top: -0.5rem;
             background-color: transparent;
             box-shadow: none;
             border: none;
@@ -78,10 +80,11 @@ nav#navbar {
             a.dropdown-item {
                 font-size: 1.4rem;
                 color: $gallery-white;
-                line-height: 3rem;
+                line-height: 2.8rem;
+                min-width: 16rem;
 
                 &:hover {
-                    background-color: transparent;
+                    background-color: $bootstrap-blue;
                     color: $alto-white;
                 }
             }

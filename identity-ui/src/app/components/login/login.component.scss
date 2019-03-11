@@ -39,12 +39,25 @@ div#login {
                 cursor: pointer;
                 font-size: 1.6rem;
             }
+
+            div.auth-error {
+                color: $pomegranate-red;
+            }
         }
     }
 
     div.login-footer {
         p {
             color: $alto-white;
+
+            a {
+                color: $white;
+
+                &:hover {
+                    color: $bootstrap-blue;
+                    text-decoration: none;
+                }
+            }
         }
     }
 }
