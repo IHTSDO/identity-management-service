@@ -1,7 +1,7 @@
 <div id="login" class="container">
     <div class="row justify-content-center">
         <div class="col-5 text-center login-header">
-            <h2 class="px-5 pt-5 mb-0">Enter Login</h2>
+            <h2 class="px-5 pt-5 mb-0">Please Log In</h2>
             <div class="user-icon rounded-circle text-center"><span class="fa fa-user"></span></div>
         </div>
         <div class="w-100"></div>
@@ -9,24 +9,25 @@
             <form [formGroup]="messageForm" (ngSubmit)="doLogin()" role="form">
                 <div class="form-group">
                     <label for="username">Account Name</label>
-                    <input type="text" class="form-control" id="username" placeholder="Your account name" formControlName="username" autofocus>
+                    <input type="text" class="form-control" id="username" name="username" placeholder="Your account name" formControlName="username" autofocus>
                     <small *ngIf="formSubmit && messageForm.controls.username.errors && messageForm.controls.username.errors.required" id="usernameHelp" class="form-text text-muted">Account name is required</small>
                 </div>
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" class="form-control" id="password" placeholder="Your password" formControlName="password">
+                    <input type="password" class="form-control" id="password" name="password" placeholder="Your password" formControlName="password">
                     <small *ngIf="formSubmit && messageForm.controls.password.errors && messageForm.controls.password.errors.required" id="passwordHelp" class="form-text text-muted">Password is required</small>
                 </div>
                 <div class="form-check pb-3">
                     <input type="checkbox" class="form-check-input" id="rememberMe" formControlName="rememberMe" checked>
-                    <label class="form-check-label pl-3" for="rememberMe">Remember me</label>
+                    <label class="form-check-label pl-3" for="rememberMe">Automatic Log In</label>
                 </div>
                 <button type="submit" class="btn btn-primary btn-block p-2">Log In</button>
+                <div *ngIf="authenticationError" id="authError" class="form-text auth-error text-center pt-3 px-3 pb-0">Sorry, we had a problem authenticating your credentials. Please check them and try again.</div>
             </form>
         </div>
         <div class="w-100"></div>
         <div class="col-5 text-center login-footer pt-5">
-            <p class="mb-0">No account yet? <a href="http://snomed.org/accounts">Register a new account</a></p>
+            <p class="mb-0">No account yet? <a href="http://snomed.org/accounts" class="pl-2">Register a new account</a></p>
         </div>
     </div>
 </div>
