@@ -3,7 +3,8 @@ server:
 
 cookie:
   name: dev-ims-ihtsdo
-  maxAge: 3600
+  # Cookie expires after 3 days as default
+  maxAge: 259200
   domain:  ihtsdotools.org
 
 crowd:
