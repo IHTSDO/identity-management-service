@@ -3,11 +3,7 @@
 // The list of file replacements can be found in `angular.json`.
 
 export const environment = {
-    production: false,
-    uat: false,
-    dev: true,
-    version: '2.0.0',
-    scaService: 'https://dev-authoring.ihtsdotools.org/#/home'
+    production: false
 };
 
 /*
