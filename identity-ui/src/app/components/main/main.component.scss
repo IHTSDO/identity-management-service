@@ -76,15 +76,7 @@ div#main {
 
             h3 {
                 background-color: $cinder-blue;
-
-                a {
-                    color: $gallery-white;
-
-                    &:hover {
-                        color: $bootstrap-blue;
-                        text-decoration: none;
-                    }
-                }
+                color: $gallery-white;
             }
 
             p {
