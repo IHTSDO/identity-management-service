@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { PrincipleService } from '../../services/principle.service';
-import { environment } from '../../../environments/environment';
 
 @Component({
     selector: 'app-main',
@@ -11,10 +10,8 @@ export class MainComponent implements OnInit {
 
     isAuthenticated: Boolean = undefined;
     isScaAuthor: Boolean = undefined;
-    sca_service: string;
 
     constructor(private principle: PrincipleService) {
-        this.sca_service = environment.scaService;
     }
 
     ngOnInit() {
