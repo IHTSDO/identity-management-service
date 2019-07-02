@@ -40,6 +40,9 @@ public class AccountResource {
 	@Value("${cookie.domain}")
 	private String cookieDomain;
 
+	@Value("${cookie.secure}")
+	private boolean cookieSecureFlag;
+
 	@Autowired
 	private CrowdRestClient crowdRestClient;
 
@@ -73,6 +76,7 @@ public class AccountResource {
 			Cookie cookie= new Cookie(cookieName, token);
 			cookie.setMaxAge(cookieMaxAge);
 			cookie.setDomain(cookieDomain);
+			cookie.setSecure(cookieSecureFlag);
 			cookie.setPath("/");
 			response.addCookie(cookie);
 			return new ResponseEntity<>(HttpStatus.OK);

@@ -5,7 +5,9 @@ cookie:
   name: dev-ims-ihtsdo
   # Cookie expires after 3 days as default
   maxAge: 259200
-  domain:  ihtsdotools.org
+  domain: ihtsdotools.org
+  # False for dev, must be set to true for UAT and Prod
+  secure: false
 
 crowd:
   api:
