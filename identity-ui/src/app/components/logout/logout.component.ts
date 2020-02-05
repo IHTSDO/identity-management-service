@@ -23,6 +23,8 @@ export class LogoutComponent implements OnInit {
             } else {
                 this.router.navigate(['/login']);
             }
+        }, (error) => {
+            console.error(error);
         });
     }
 
