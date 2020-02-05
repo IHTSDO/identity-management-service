@@ -28,7 +28,9 @@
     "popper.js": "^1.14.6",
     "rxjs": "~6.3.3",
     "tslib": "^1.9.0",
-    "zone.js": "~0.8.27"
+    "zone.js": "~0.8.27",
+    "karma-phantomjs-launcher": "^1.0.4",
+    "phantomjs-polyfill-object-assign": "0.0.2"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "~0.12.1",
