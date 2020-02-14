@@ -15,9 +15,11 @@
 </body>
 <script>
     <!-- Portable copyright year resolution using server date -->
-    var date = new Date();
-    var year = date.getFullYear();
-    $('.copyright-year').text(year);
-    $('.copyright').show();
+    $(document).ready(function(){
+        var date = new Date();
+        var year = date.getFullYear();
+        $('.copyright-year').text(year);
+        $('.copyright').show();
+    });
 </script>
 </html>
