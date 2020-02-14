@@ -14,11 +14,10 @@
 <app-root></app-root>
 </body>
 <script>
-<!-- Portable copyright year resolution using server date -->
-$.ajax({ type: 'HEAD', url:'/', success: function(data, textStatus, response){
-  var year = new Date(response.getResponseHeader('Date')).getFullYear();
-  $('.copyright-year').text(year);
-  $('.copyright').show();
-}});
+    <!-- Portable copyright year resolution using server date -->
+    var date = new Date();
+    var year = date.getFullYear();
+    $('.copyright-year').text(year);
+    $('.copyright').show();
 </script>
 </html>
