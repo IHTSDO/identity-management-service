@@ -29,7 +29,7 @@ import org.springframework.web.client.RestClientException;
 @RequestMapping("/api")
 public class AccountResource {
 
-	private final Logger log = LoggerFactory.getLogger(AccountResource.class);
+	private static final Logger log = LoggerFactory.getLogger(AccountResource.class);
 	
 	@Value("${cookie.name}")
 	private String cookieName;

@@ -28,7 +28,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api")
 public class CacheResource {
 
-	private final Logger log = LoggerFactory.getLogger(CacheResource.class);
+	private static final Logger log = LoggerFactory.getLogger(CacheResource.class);
 
 	@Value("${cookie.name}")
 	private String cookieName;
