@@ -1,60 +1,22 @@
-IHTSDO Tools Identity Management & SSO Service
-===============================================
+# IHTSDO Tools Identity Management & SSO Service
 
-This service includes an identity-service module , a IHTSDO-Crowd bridge module and IHTSDO-Crowd resource module.
+# Modules
 
-identity-service is an authentication module deployed as a federated service and has its own angularjs UI
+### Identity Service
+This module is the IMS API written in Spring Boot. It provides single sign-on authentication and authorisation functionality, backed by Atlasian Crowd. User groups (labeled as roles) are cached to provide a faster lookup.
 
-ihtsdo-crowd-bridge module which works as a bridge between Atlassian Crowd & authentication module.
+The Swagger interface for the production deployment is here: https://ims.ihtsdotools.org/swagger-ui.html
 
-ihtsdo-crowd-resource module contains all the resources required to enable SSO in an IHTSDO tools application
+### Identity UI
+This module is the user login and landing page screens written in Angular.
 
-Build
-========
+## How to enable SSO in an IHTSDO tools application
+See the [IHTSDO Spring SSO project](https://github.com/IHTSDO/ihtsdo-spring-sso).
 
-Production build can be done using following command
-
-`mvn -Pprod clean package`
-
-for UAT
-`mvn -Puat clean package`
-
-
-Above generate two wars of identity-service module beside other artifacts.
-
-    ~/identity-service/target/identity-service-0.0.1-SNAPSHOT.war
-    ~/identity-service/target/identity-service-0.0.1-SNAPSHOT.war.original
-
-From above two wars *war.original should be deployed or used as part of debian package as it does not includes tomcat binaries. First one is executable war.
-
-In development application can be run using 
-
-`mvn spring-boot:run`
-
-Deployment
-==========
-Application uses yml based properties configuration and based on each deployment environment, application start script must pass  spring.profiles.active property value as java option. 
-
-For example in development environment it is `-Dspring.profiles.active=dev`
-
-in  user acceptance test environment `-Dspring.profiles.active=uat`
-
-and in production it is `-Dspring.profiles.active=prod`
-
-
-How to enable SSO in an IHTSDO tools application
-================================================
-
-See on [confluence](https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=7537010)
-
-Crowd configuration rules
-=========================
-See on [confluence](https://confluence.ihtsdotools.org/display/IMS/IHTSDO+Tools+Security+Policies)
-[Please also see a note Trusted Proxy settings](https://confluence.atlassian.com/display/CROWD/Debugging+SSO+in+environments+with+Proxy+Servers)
+## Crowd configuration
+See [Crowd Trusted Proxy settings](https://confluence.atlassian.com/display/CROWD/Debugging+SSO+in+environments+with+Proxy+Servers).
 	
-FE only Local Deployment
-=========================
-
+## FE only Local Deployment
 Check out the repository and navigate to the identity-service folder. From here run the following: 
 
 Run `npm install grunt -g` to make the local application aware of your grunt installation.ß
