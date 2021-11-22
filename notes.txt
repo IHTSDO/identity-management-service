@@ -1,2 +1,0 @@
-Works from directory with unzipped war and unziped resources
-java -DcrowdPropertiesFileLocation=/Users/kai/c/identity-management/identity-service/src/main/resources/ org.springframework.boot.loader.WarLauncher --spring.profiles.active=prod
