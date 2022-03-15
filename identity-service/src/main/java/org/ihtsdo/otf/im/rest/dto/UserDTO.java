@@ -1,8 +1,8 @@
 package org.ihtsdo.otf.im.rest.dto;
 
-import org.hibernate.validator.constraints.Email;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import javax.validation.constraints.Email;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
