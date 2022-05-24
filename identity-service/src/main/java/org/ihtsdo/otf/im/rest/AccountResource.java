@@ -100,21 +100,23 @@ public class AccountResource {
 		}
 
 		Cookie[] cookies = request.getCookies();
-		for (Cookie cookie : cookies) {
-			if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
-				if (StringUtils.isNotEmpty(cookie.getValue())) {
-					try {
-						crowdRestClient.invalidateToken(cookie.getValue());
-					} catch (RestClientException ex) {
-						log.error("Token {} is not valid", cookie.getValue());
+		if (cookies != null) {
+			for (Cookie cookie : cookies) {
+				if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
+					if (StringUtils.isNotEmpty(cookie.getValue())) {
+						try {
+							crowdRestClient.invalidateToken(cookie.getValue());
+						} catch (RestClientException ex) {
+							log.error("Token {} is not valid", cookie.getValue());
+						}
 					}
+
+					// invalidate cookie
+					cookie.setMaxAge(0);
+					cookie.setValue("");
+					cookie.setPath("/");
+					response.addCookie(cookie);
 				}
-				
-				// invalidate cookie
-				cookie.setMaxAge(0);
-				cookie.setValue("");
-				cookie.setPath("/");
-				response.addCookie(cookie);
 			}
 		}
 	}
