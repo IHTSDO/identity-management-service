@@ -1,0 +1,24 @@
+<nav class="navbar sticky-top navbar-dark bg-dark p-2 pe-2">
+    <a class="logo" routerLink="/">
+        <img class="logo me-2 p-0" src="/assets/small_logo.png">
+        <span class="title text-ghost-grey">SNOMED International Tools</span>
+    </a>
+
+    <ng-container [ngSwitch]="environment">
+        <div *ngSwitchCase="'local'" class="banner text-white local"></div>
+        <div *ngSwitchCase="'dev'" class="banner text-white dev"></div>
+        <div *ngSwitchCase="'uat'" class="banner text-white uat"></div>
+        <div *ngSwitchCase="'training'" class="banner text-white training"></div>
+        <div *ngSwitchDefault class="banner text-white d-none"></div>
+    </ng-container>
+
+    <div *ngIf="user" class="float-right">
+        <div class="logout d-inline-block m-2" (click)="logout()">
+            <span class="px-2 text-ghost-grey">Logout</span>
+        </div>
+        <div class="user d-inline-block m-2">
+            <span class="px-2 text-ghost-grey">{{user.firstName}} {{user.lastName}}</span>
+            <img class="rounded-circle ms-3" src="https://jira.ihtsdotools.org/secure/useravatar?ownerId={{user.login}}">
+        </div>
+    </div>
+</nav>
