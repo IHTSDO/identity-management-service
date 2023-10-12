@@ -4,15 +4,15 @@
     "newProjectRoot": "projects",
     "projects": {
         "identity-ui": {
-            "root": "",
-            "sourceRoot": "src",
             "projectType": "application",
-            "prefix": "app",
             "schematics": {
                 "@schematics/angular:component": {
-                    "styleext": "scss"
+                    "style": "scss"
                 }
             },
+            "root": "",
+            "sourceRoot": "src",
+            "prefix": "app",
             "architect": {
                 "build": {
                     "builder": "@angular-devkit/build-angular:browser",
@@ -20,108 +20,77 @@
                         "outputPath": "dist/identity-ui",
                         "index": "src/index.html",
                         "main": "src/main.ts",
-                        "polyfills": "src/polyfills.ts",
-                        "tsConfig": "src/tsconfig.app.json",
+                        "tsConfig": "tsconfig.app.json",
+                        "inlineStyleLanguage": "scss",
                         "assets": [
+                            "src/favicon.ico",
+                            "src/favicon_grey.ico",
+                            "src/favicon_red.ico",
+                            "src/favicon_green.ico",
+                            "src/favicon_yellow.ico",
                             "src/assets"
                         ],
                         "styles": [
-                            "src/styles.scss",
-                            "./node_modules/bootstrap/dist/css/bootstrap.min.css"
+                            "./node_modules/bootstrap/dist/css/bootstrap.min.css",
+                            "./node_modules/@fortawesome/fontawesome-free/css/all.css",
+                            "src/toastr.scss",
+                            "src/styles.scss"
                         ],
                         "scripts": [
-                            "./node_modules/jquery/dist/jquery.min.js",
-                            "./node_modules/popper.js/dist/umd/popper.min.js",
+                            "./node_modules/@popperjs/core/dist/umd/popper.min.js",
                             "./node_modules/bootstrap/dist/js/bootstrap.min.js"
                         ]
                     },
                     "configurations": {
                         "production": {
-                            "fileReplacements": [
-                                {
-                                    "replace": "src/environments/environment.ts",
-                                    "with": "src/environments/environment.prod.ts"
-                                }
-                            ],
-                            "optimization": true,
-                            "outputHashing": "all",
-                            "sourceMap": false,
-                            "extractCss": true,
-                            "namedChunks": false,
-                            "aot": true,
-                            "extractLicenses": true,
-                            "vendorChunk": false,
-                            "buildOptimizer": true,
+                            "baseHref": "/",
                             "budgets": [
                                 {
                                     "type": "initial",
-                                    "maximumWarning": "2mb",
-                                    "maximumError": "5mb"
+                                    "maximumWarning": "1mb",
+                                    "maximumError": "2mb"
+                                },
+                                {
+                                    "type": "anyComponentStyle",
+                                    "maximumWarning": "16kb",
+                                    "maximumError": "32kb"
                                 }
-                            ]
+                            ],
+                            "outputHashing": "all"
                         },
-                        "uat": {
-                            "fileReplacements": [
-                                {
-                                    "replace": "src/environments/environment.ts",
-                                    "with": "src/environments/environment.uat.ts"
-                                }
-                            ],
-                            "optimization": true,
-                            "outputHashing": "all",
-                            "sourceMap": false,
-                            "extractCss": true,
-                            "namedChunks": false,
-                            "aot": true,
-                            "extractLicenses": true,
-                            "vendorChunk": false,
-                            "buildOptimizer": true,
-                            "budgets": [
-                                {
-                                    "type": "initial",
-                                    "maximumWarning": "2mb",
-                                    "maximumError": "5mb"
-                                }
-                            ]
+                        "development": {
+                            "buildOptimizer": false,
+                            "optimization": false,
+                            "vendorChunk": true,
+                            "extractLicenses": false,
+                            "sourceMap": true,
+                            "namedChunks": true
                         }
-                    }
+                    },
+                    "defaultConfiguration": "production"
                 },
                 "serve": {
                     "builder": "@angular-devkit/build-angular:dev-server",
                     "options": {
-                        "browserTarget": "identity-ui:build",
-                        "liveReload": false,
-                        "baseHref": "/"
+                        "liveReload": false
                     },
                     "configurations": {
                         "production": {
                             "browserTarget": "identity-ui:build:production"
                         },
-                        "uat": {
-                            "browserTarget": "identity-ui:build:uat"
+                        "development": {
+                            "browserTarget": "identity-ui:build:development"
                         }
-                    }
+                    },
+                    "defaultConfiguration": "development"
                 },
                 "extract-i18n": {
                     "builder": "@angular-devkit/build-angular:extract-i18n",
                     "options": {
                         "browserTarget": "identity-ui:build"
                     }
-                },
-                "lint": {
-                    "builder": "@angular-devkit/build-angular:tslint",
-                    "options": {
-                        "tsConfig": [
-                            "src/tsconfig.app.json",
-                            "src/tsconfig.spec.json"
-                        ],
-                        "exclude": [
-                            "**/node_modules/**"
-                        ]
-                    }
                 }
             }
         }
-    },
-    "defaultProject": "identity-ui"
+    }
 }

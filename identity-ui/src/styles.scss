@@ -6,13 +6,82 @@ html {
     min-height: 100%;
 }
 
-body#main-body {
-    font-family: "Roboto", "Helvetica Neue", Arial, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    font-size: 1.4rem;
-    font-weight: 400;
+//body#main-body {
+//    font-family: "Roboto", "Helvetica Neue", Arial, sans-serif;
+//    -webkit-font-smoothing: antialiased;
+//    font-size: 1.4rem;
+//    font-weight: 400;
+//    letter-spacing: 0.5px;
+//    background-color: $charade-blue;
+//}
+
+body {
+    font-family: 'Poppins', 'Helvetica Neue', 'Arial', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 300;
+    color: $black;
     letter-spacing: 0.5px;
-    background-color: $charade-blue;
+    background-image: radial-gradient(circle, rgba(73,168,219,0.8) 0%, rgba(18,79,107,0.8) 100%), url('assets/images/medical_bg.png');
+    //background: rgb(73,168,219);
+    //background: radial-gradient(circle, rgba(73,168,219,0.5) 0%, rgba(18,79,107,0.5) 100%);
+}
+
+@font-face {
+    font-family: 'Poppins';
+    src: url('assets/Poppins-Thin.ttf');
+    font-weight: 100;
+}
+
+@font-face {
+    font-family: 'Poppins';
+    src: url('assets/Poppins-ExtraLight.ttf');
+    font-weight: 200;
+}
+
+@font-face {
+    font-family: 'Poppins';
+    src: url('assets/Poppins-Light.ttf');
+    font-weight: 300;
+}
+
+@font-face {
+    font-family: 'Poppins';
+    src: url('assets/Poppins-Regular.ttf');
+    font-weight: 400;
+}
+
+@font-face {
+    font-family: 'Poppins';
+    src: url('assets/Poppins-Medium.ttf');
+    font-weight: 500;
+}
+
+@font-face {
+    font-family: 'Poppins';
+    src: url('assets/Poppins-SemiBold.ttf');
+    font-weight: 600;
+}
+
+@font-face {
+    font-family: 'Poppins';
+    src: url('assets/Poppins-Bold.ttf');
+    font-weight: 700;
+}
+
+@font-face {
+    font-family: 'Poppins';
+    src: url('assets/Poppins-ExtraBold.ttf');
+    font-weight: 800;
+}
+
+@font-face {
+    font-family: 'Poppins';
+    src: url('assets/Poppins-Black.ttf');
+    font-weight: 900;
+}
+
+a {
+    text-decoration: none;
 }
 
 div, p, h1, h2, h3, h4, h5, h6 {

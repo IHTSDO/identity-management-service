@@ -4,12 +4,14 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { NavbarComponent } from './components/navbar/navbar.component';
 import { MainComponent } from './components/main/main.component';
 import { LoginComponent } from './components/login/login.component';
 import { HttpConfigInterceptor } from './configs/httpconfig.interceptor';
-import { PrincipleService } from './services/principle.service';
+import { PrincipleService } from './services/principle/principle.service';
 import { LogoutComponent } from './components/logout/logout.component';
+import {SnomedNavbarComponent} from "./components/snomed-navbar/snomed-navbar.component";
+import {AuthenticationService} from "./services/authentication/authentication.service";
+import {ToastrModule} from "ngx-toastr";
 
 export function startupServiceFactory(principle: PrincipleService): Function {
     return () => principle.identity(true);
@@ -18,20 +20,22 @@ export function startupServiceFactory(principle: PrincipleService): Function {
 @NgModule({
     declarations: [
         AppComponent,
-        NavbarComponent,
         MainComponent,
         LoginComponent,
-        LogoutComponent
-
+        LogoutComponent,
+        SnomedNavbarComponent
     ],
     imports: [
         BrowserModule,
         HttpClientModule,
         FormsModule,
         ReactiveFormsModule,
-        AppRoutingModule
+        AppRoutingModule,
+        ToastrModule.forRoot()
     ],
-    providers: [PrincipleService,
+    providers: [
+        PrincipleService,
+        AuthenticationService,
         {
             provide: APP_INITIALIZER,
             useFactory: startupServiceFactory,
