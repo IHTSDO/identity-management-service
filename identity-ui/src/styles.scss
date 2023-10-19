@@ -6,15 +6,6 @@ html {
     min-height: 100%;
 }
 
-//body#main-body {
-//    font-family: "Roboto", "Helvetica Neue", Arial, sans-serif;
-//    -webkit-font-smoothing: antialiased;
-//    font-size: 1.4rem;
-//    font-weight: 400;
-//    letter-spacing: 0.5px;
-//    background-color: $charade-blue;
-//}
-
 body {
     font-family: 'Poppins', 'Helvetica Neue', 'Arial', sans-serif;
     font-size: 1.2rem;
@@ -22,8 +13,7 @@ body {
     color: $black;
     letter-spacing: 0.5px;
     background-image: radial-gradient(circle, rgba(73,168,219,0.8) 0%, rgba(18,79,107,0.8) 100%), url('assets/images/medical_bg.png');
-    //background: rgb(73,168,219);
-    //background: radial-gradient(circle, rgba(73,168,219,0.5) 0%, rgba(18,79,107,0.5) 100%);
+    background-size: cover;
 }
 
 @font-face {
