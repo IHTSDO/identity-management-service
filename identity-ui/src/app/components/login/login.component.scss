@@ -60,15 +60,15 @@ div#login {
             }
 
             div.post-text {
-                p {
-                    font-size: 1.4rem;
+                h3 {
+                    font-size: 1.6rem;
                     font-weight: 300;
 
                     a {
-                        color: $white;
+                        color: $anakiwa;
 
                         &:hover {
-                            color: $anakiwa;
+                            color: lighten($anakiwa, 10%);
                         }
                     }
                 }

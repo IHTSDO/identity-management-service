@@ -12,6 +12,7 @@ import { LogoutComponent } from './components/logout/logout.component';
 import {SnomedNavbarComponent} from "./components/snomed-navbar/snomed-navbar.component";
 import {AuthenticationService} from "./services/authentication/authentication.service";
 import {ToastrModule} from "ngx-toastr";
+import {SnomedFooterComponent} from "./components/snomed-footer/snomed-footer.component";
 
 export function startupServiceFactory(principle: PrincipleService): Function {
     return () => principle.identity(true);
@@ -23,7 +24,8 @@ export function startupServiceFactory(principle: PrincipleService): Function {
         MainComponent,
         LoginComponent,
         LogoutComponent,
-        SnomedNavbarComponent
+        SnomedNavbarComponent,
+        SnomedFooterComponent
     ],
     imports: [
         BrowserModule,
