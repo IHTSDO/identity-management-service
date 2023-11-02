@@ -5,8 +5,8 @@ import { LoginComponent } from './components/login/login.component';
 import { LogoutComponent } from './components/logout/logout.component';
 
 const routes: Routes = [
-    {path: '', component: MainComponent},
-    {path: 'home', component: MainComponent},
+    {path: '', component: MainComponent, redirectTo: 'login'},
+    {path: 'home', component: MainComponent, redirectTo: 'login'},
     {path: 'login', component: LoginComponent, pathMatch: 'full'},
     {path: 'login?serviceReferer=', component: LoginComponent, pathMatch: 'full'},
     {path: 'logout', component: LogoutComponent, pathMatch: 'full'},

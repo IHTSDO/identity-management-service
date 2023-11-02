@@ -1,13 +1,14 @@
 import { Injectable, Output, EventEmitter } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { IAccountInfo } from '../models/account-info';
+import {User} from "../../models/user";
+
 
 @Injectable({
     providedIn: 'root'
 })
 export class PrincipleService {
 
-    _identity: IAccountInfo = null;
+    _identity: User = null;
     _authenticated = false;
     _isIdentityResolved = false;
     @Output() loadAccountCompleted: EventEmitter<boolean> = new EventEmitter();
@@ -44,7 +45,7 @@ export class PrincipleService {
         return false;
     }
 
-    authenticate(identity: IAccountInfo) {
+    authenticate(identity: User) {
         this._identity = identity;
         this._authenticated = identity !== null;
         this.loadAccountCompleted.emit(true);
@@ -56,12 +57,11 @@ export class PrincipleService {
                 this._identity = undefined;
             }
 
-            this.http.get<IAccountInfo>('api/account', {observe: 'response'}).subscribe(response => {
+            this.http.get<User>('api/account', {observe: 'response'}).subscribe(response => {
                     this._identity = response.body;
                     this._authenticated = this._identity.login != null;
                     this._isIdentityResolved = true;
                     this.loadAccountCompleted.emit(true);
-
                     resolve(this._identity);
                 },
                 msg => {
