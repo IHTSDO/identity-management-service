@@ -1,9 +1,9 @@
-@import "~src/variables";
+@import "src/variables";
 
 div#main {
     div.alert {
         div.alert-header {
-            background-color: $cinder-blue;
+            //background-color: $cinder-blue;
             z-index: 1;
 
             div.user-icon {
@@ -26,7 +26,7 @@ div#main {
                 color: $white;
 
                 &:hover {
-                    color: $bootstrap-blue;
+                    //color: $bootstrap-blue;
                     text-decoration: none;
                 }
             }
@@ -40,7 +40,7 @@ div#main {
                     color: $white;
 
                     &:hover {
-                        color: $bootstrap-blue;
+                        //color: $bootstrap-blue;
                         text-decoration: none;
                     }
                 }
@@ -50,11 +50,11 @@ div#main {
 
     div.authenticated {
         div.authenticated-header {
-            background-color: $cinder-blue;
+            //background-color: $cinder-blue;
             z-index: 1;
 
             div.list-icon {
-                background-color: $charade-blue;
+                //background-color: $charade-blue;
                 color: $gallery-white;
                 width: 4rem;
                 height: 4rem;
@@ -75,12 +75,12 @@ div#main {
             }
 
             h3 {
-                background-color: $cinder-blue;
+                //background-color: $cinder-blue;
                 color: $gallery-white;
             }
 
             p {
-                color: $charade-blue;
+                //color: $charade-blue;
                 background-color: $gallery-white;
             }
         }
