@@ -4,10 +4,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <artifactId>identity-management</artifactId>
-        <groupId>org.ihtsdo.otf</groupId>
-        <version>2.3.0-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
+        <groupId>org.snomed</groupId>
+        <artifactId>snomed-parent-bom</artifactId>
+        <version>3.8.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>identity-service</artifactId>
