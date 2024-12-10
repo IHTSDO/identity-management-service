@@ -1,15 +1,16 @@
 package org.ihtsdo.otf.im.config;
 
+import io.swagger.v3.oas.models.ExternalDocumentation;
+import io.swagger.v3.oas.models.info.Contact;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.License;
+import org.springdoc.core.models.GroupedOpenApi;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import springfox.documentation.builders.ApiInfoBuilder;
-import springfox.documentation.builders.PathSelectors;
-import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.service.ApiInfo;
-import springfox.documentation.spi.DocumentationType;
-import springfox.documentation.spring.web.plugins.Docket;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
+import io.swagger.v3.oas.models.OpenAPI;
 
 /**
  * Swagger configuration.
@@ -19,23 +20,30 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
  * have access to the Swagger view.
  */
 @Configuration
-@EnableSwagger2
 public class SwaggerConfiguration {
+	@Autowired(required = false)
+	private BuildProperties buildProperties;
 
-	 @Bean
-	    public Docket api() {
-	        return new Docket(DocumentationType.SWAGGER_2).select()
-	            .apis(RequestHandlerSelectors
-	                .basePackage("org.ihtsdo.otf.im.rest"))
-	            .paths(PathSelectors.regex("/.*"))
-	            .build().apiInfo(apiEndPointsInfo());
-	    }
-	    private ApiInfo apiEndPointsInfo() {
-	        return new ApiInfoBuilder().title("Spring Boot REST API")
-	            .description("Identity Management REST API")
-	            .license("Apache 2.0")
-	            .licenseUrl("http://www.apache.org/licenses/LICENSE-2.0.html")
-	            .version("2.0.0")
-	            .build();
-	    }
+	@Bean
+	public GroupedOpenApi apiDocs() {
+		return GroupedOpenApi.builder()
+				.group("identity-service")
+				.pathsToExclude("/error", "/") // Don't show the error or root endpoints in Swagger
+				.build();
+	}
+
+	@Bean
+	public OpenAPI apiInfo() {
+		final String version = buildProperties != null ? buildProperties.getVersion() : "DEV";
+		return new OpenAPI()
+				.info(new Info()
+						.title("Identity Service")
+						.description("Microservice to ensure service acceptance criteria are met before content promotion within the SNOMED CT Authoring Platform.")
+						.version(version)
+						.contact(new Contact().name("SNOMED International").url("https://www.snomed.org"))
+						.license(new License().name("Apache 2.0").url("http://www.apache.org/licenses/LICENSE-2.0")))
+				.externalDocs(new ExternalDocumentation()
+						.description("See more about Identity Management Service in GitHub")
+						.url("https://github.com/IHTSDO/identity-management-service"));
+	}
 }

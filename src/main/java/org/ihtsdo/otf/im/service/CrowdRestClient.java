@@ -1,5 +1,12 @@
 package org.ihtsdo.otf.im.service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import jakarta.annotation.PostConstruct;
+
 import org.ihtsdo.otf.im.rest.dto.UserDTO;
 import org.ihtsdo.otf.im.security.AuthoritiesConstants;
 import org.ihtsdo.otf.im.service.model.GroupsResponse;
@@ -10,12 +17,6 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
-
-import javax.annotation.PostConstruct;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @Service
 @SuppressWarnings("rawtypes")
@@ -85,12 +86,6 @@ public class CrowdRestClient {
 		params.put("token", token);
 		
 		Map result = restTemplate.getForObject("/session/{token}", Map.class, params);
-		setUserDetailsAndJoinRoles(result, userDTO, params);
-
-		return userDTO;
-	}
-
-	private void setUserDetailsAndJoinRoles(Map result, UserDTO userDTO, Map<String, String> params) {
 		if (null != result) {
 
 			// Get user information
@@ -117,6 +112,8 @@ public class CrowdRestClient {
 				userDTO.setRoles(lstRoles);
 			}
 		}
+
+		return userDTO;
 	}
 
     public List<UserDTO> searchUsersByGroup(String groupname, String username, int maxResults, int startAt) {

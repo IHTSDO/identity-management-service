@@ -1,8 +1,8 @@
 package org.ihtsdo.otf.im.rest;
 
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.ihtsdo.otf.im.rest.dto.UserDTO;
 import org.ihtsdo.otf.im.security.AuthoritiesConstants;
@@ -11,13 +11,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import net.sf.ehcache.CacheManager;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -36,6 +37,9 @@ public class CacheResource {
 	@Autowired
 	private CrowdRestClient crowdRestClient;
 
+	@Autowired
+	private CacheManager cacheManager;
+
 	/**
 	 * POST  /cache/clear-all -> clear cache for all users.
 	 */
@@ -51,8 +55,13 @@ public class CacheResource {
 					try {
 						UserDTO user = crowdRestClient.getUserByToken(cookie.getValue());
 						if (user.getRoles().contains(AuthoritiesConstants.IMS_ADMIN)) {
-							CacheManager.getInstance().clearAll();
-							log.info("User {} cleared cache", user.getLogin());
+							cacheManager.getCacheNames().parallelStream().forEach((name) -> {
+								Cache cache = cacheManager.getCache(name);
+								if (cache != null) {
+									log.info("Cache {} cleared", name);
+									cache.clear();
+								}
+							});
 							return;
 						}
 					} catch (RestClientException ex) {
