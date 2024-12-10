@@ -47,11 +47,10 @@ public class CrowdRestClient {
 		System.out.println(groupsResponse.getGroupNames());
 	}
 	
-	public void getUser(String username) {
+	public UserDTO getUser(String username) {
 		Map<String, String> params = new HashMap<>();
 		params.put("username", username);
-		UserDTO userDTO = restTemplate.getForObject("/user?username={username}", UserDTO.class, params);
-		System.out.println(userDTO.getEmail());
+		return restTemplate.getForObject("/user?username={username}", UserDTO.class, params);
 	}
 
 	public String authenticate(String username, String password) {
