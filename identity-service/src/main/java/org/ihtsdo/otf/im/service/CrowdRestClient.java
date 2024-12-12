@@ -1,12 +1,5 @@
 package org.ihtsdo.otf.im.service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.annotation.PostConstruct;
-
 import org.ihtsdo.otf.im.rest.dto.UserDTO;
 import org.ihtsdo.otf.im.security.AuthoritiesConstants;
 import org.ihtsdo.otf.im.service.model.GroupsResponse;
@@ -16,6 +9,12 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
+import javax.annotation.PostConstruct;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @SuppressWarnings("rawtypes")
@@ -50,7 +49,17 @@ public class CrowdRestClient {
 	public UserDTO getUser(String username) {
 		Map<String, String> params = new HashMap<>();
 		params.put("username", username);
-		return restTemplate.getForObject("/user?username={username}", UserDTO.class, params);
+		Map result = restTemplate.getForObject("/user?username={username}", Map.class, params);
+		UserDTO userDTO = new UserDTO();
+		if (null != result) {
+			userDTO.setFirstName(result.get("first-name").toString());
+			userDTO.setLastName(result.get("last-name").toString());
+			userDTO.setEmail(result.get("email").toString());
+			userDTO.setLogin(result.get("name").toString());
+			userDTO.setDisplayName(result.get("display-name").toString());
+		}
+
+		return userDTO;
 	}
 
 	public String authenticate(String username, String password) {
@@ -74,8 +83,14 @@ public class CrowdRestClient {
 		params.put("token", token);
 		
 		Map result = restTemplate.getForObject("/session/{token}", Map.class, params);
+		setUserDetailsAndJoinRoles(result, userDTO, params);
+
+		return userDTO;
+	}
+
+	private void setUserDetailsAndJoinRoles(Map result, UserDTO userDTO, Map<String, String> params) {
 		if (null != result) {
-			
+
 			// Get user information
 			Map user = (Map) result.get("user");
 			userDTO.setFirstName(user.get("first-name").toString());
@@ -83,7 +98,7 @@ public class CrowdRestClient {
 			userDTO.setEmail(user.get("email").toString());
 			userDTO.setLangKey(user.get("key").toString());
 			userDTO.setLogin(user.get("name").toString());
-			
+
 			// Get all roles of user
 			params.clear();
 			params.put("username", user.get("name").toString());
@@ -98,10 +113,8 @@ public class CrowdRestClient {
 				userDTO.setRoles(lstRoles);
 			}
 		}
-		
-		return userDTO;
 	}
-	
+
 	@CacheEvict(value = "accountCache", key = "#token")
 	public void invalidateToken(String token) {
 		restTemplate.delete("/session/{token}", token);	

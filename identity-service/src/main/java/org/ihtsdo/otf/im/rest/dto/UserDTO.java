@@ -38,6 +38,8 @@ public class UserDTO implements Serializable{
 	@Size(min = 2, max = 5)
 	private String langKey;
 
+	private String displayName;
+
 	private List<String> roles;
 
 	public UserDTO() {
@@ -56,6 +58,10 @@ public class UserDTO implements Serializable{
 	
 	public String getLogin() {
 		return login;
+	}
+
+	public String getUsername() {
+		return this.getLogin();
 	}
 
 	public void setLogin(String login) {
@@ -82,6 +88,10 @@ public class UserDTO implements Serializable{
 		this.langKey = langKey;
 	}
 
+	public void setDisplayName(String displayName) {
+		this.displayName = displayName;
+	}
+
 	public void setRoles(List<String> roles) {
 		this.roles = roles;
 	}
@@ -104,6 +114,10 @@ public class UserDTO implements Serializable{
 
 	public String getLangKey() {
 		return langKey;
+	}
+
+	public String getDisplayName() {
+		return displayName;
 	}
 
 	public List<String> getRoles() {

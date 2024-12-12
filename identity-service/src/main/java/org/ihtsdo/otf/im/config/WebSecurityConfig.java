@@ -16,7 +16,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 		http.csrf().disable()
 			.authorizeRequests()
 				.antMatchers("/api/reset_password", "/api/forgot_password").anonymous()
-				.antMatchers("/api/authenticate", "/api/account", "/api/account/logout", "/api/cache/**").permitAll()
+				.antMatchers("/api/authenticate", "/api/account", "/api/account/logout", "/api/cache/**", "/api/user").permitAll()
 				.antMatchers("/api/**").authenticated();
 	}
 

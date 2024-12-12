@@ -12,16 +12,16 @@ import org.springframework.web.client.RestClientException;
 import javax.servlet.http.HttpServletResponse;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api")
 public class UserResource {
 
     @Autowired
     private CrowdRestClient crowdRestClient;
 
-    @GetMapping(value = "/{username}/details",
+    @GetMapping(value = "/user",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<UserDTO> getUserDetails(@PathVariable String username, HttpServletResponse response) {
+    public ResponseEntity<UserDTO> getUserDetails(@RequestParam String username, HttpServletResponse response) {
         try {
             UserDTO user = crowdRestClient.getUser(username);
             return new ResponseEntity<>(user, HttpStatus.OK);
