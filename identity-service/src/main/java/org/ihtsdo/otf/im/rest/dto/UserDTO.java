@@ -40,6 +40,8 @@ public class UserDTO implements Serializable{
 
 	private String displayName;
 
+	private boolean active;
+
 	private List<String> roles;
 
 	public UserDTO() {
@@ -100,6 +102,10 @@ public class UserDTO implements Serializable{
 		return password;
 	}
 
+	public void setActive(boolean active) {
+		this.active = active;
+	}
+
 	public String getFirstName() {
 		return firstName;
 	}
@@ -118,6 +124,10 @@ public class UserDTO implements Serializable{
 
 	public String getDisplayName() {
 		return displayName;
+	}
+
+	public boolean isActive() {
+		return active;
 	}
 
 	public List<String> getRoles() {

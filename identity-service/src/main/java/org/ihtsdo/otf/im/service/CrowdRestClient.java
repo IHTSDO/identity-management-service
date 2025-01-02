@@ -8,6 +8,7 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
@@ -57,6 +58,7 @@ public class CrowdRestClient {
 			userDTO.setEmail(result.get("email").toString());
 			userDTO.setLogin(result.get("name").toString());
 			userDTO.setDisplayName(result.get("display-name").toString());
+			userDTO.setActive(Boolean.parseBoolean(result.get("active").toString()));
 		}
 
 		return userDTO;
@@ -98,6 +100,8 @@ public class CrowdRestClient {
 			userDTO.setEmail(user.get("email").toString());
 			userDTO.setLangKey(user.get("key").toString());
 			userDTO.setLogin(user.get("name").toString());
+			userDTO.setDisplayName(user.get("display-name").toString());
+			userDTO.setActive(Boolean.parseBoolean(user.get("active").toString()));
 
 			// Get all roles of user
 			params.clear();
@@ -105,15 +109,46 @@ public class CrowdRestClient {
 			result = restTemplate.getForObject("/user/group/direct?username={username}", Map.class, params);
 			if (null != result) {
 				ArrayList<?> arrRoles = (ArrayList<?>) result.get("groups");
-				List<String> lstRoles = new ArrayList<String>();
-				for (int i = 0; i < arrRoles.size(); i++) {
-					Map role =  (Map) arrRoles.get(i);
-					lstRoles.add(AuthoritiesConstants.ROLE_PREFIX + role.get("name"));
-				}
+				List<String> lstRoles = new ArrayList<>();
+                for (Object arrRole : arrRoles) {
+                    Map role = (Map) arrRole;
+                    lstRoles.add(AuthoritiesConstants.ROLE_PREFIX + role.get("name"));
+                }
 				userDTO.setRoles(lstRoles);
 			}
 		}
 	}
+
+    public List<UserDTO> searchUsersByGroup(String groupname, String username, int maxResults, int startAt) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("groupname", groupname);
+        params.put("maxResults", maxResults);
+        params.put("startIndex", startAt);
+        if (StringUtils.hasLength(username)) {
+            params.put("username", username);
+        }
+
+        Map response = restTemplate.getForObject("/group/user/direct?groupname={groupname}&max-results={maxResults}&start-index={startIndex}" + (StringUtils.hasLength(username) ? "&username={username}" : ""), Map.class, params);
+        List<UserDTO> result = new ArrayList<>();
+        if (response != null) {
+			if (response.containsKey("users")) {
+				ArrayList<?> userArr = (ArrayList<?>) response.get("users");
+				for (Object o : userArr) {
+					Map user = (Map) o;
+					UserDTO userDTO = getUser(user.get("name").toString());
+					userDTO.setEmail(null);
+
+					result.add(userDTO);
+				}
+			} else if (response.containsKey("name")) {
+				UserDTO userDTO = getUser(response.get("name").toString());
+				userDTO.setEmail(null);
+				result.add(userDTO);
+			}
+        }
+
+        return result;
+    }
 
 	@CacheEvict(value = "accountCache", key = "#token")
 	public void invalidateToken(String token) {
