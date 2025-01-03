@@ -9,20 +9,22 @@
         <version>3.8.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>identity-service</artifactId>
+    <artifactId>identity-management-service</artifactId>
+    <version>3.0.0-SNAPSHOT</version>
+    <description>Web API providing single sign-on authentication and authorisation, built on top of Atlassian Crowd.</description>
     <packaging>jar</packaging>
 
-    <name>IHTSDO Identity Management Service + UI</name>
-
     <properties>
-        <execFinalName>${project.build.finalName}.jar</execFinalName>
         <packageName>${project.artifactId}</packageName>
-        <commons-io.version>2.7</commons-io.version>
-        <commons-lang.version>2.6</commons-lang.version>
-        <swagger-ui.version>2.8.0</swagger-ui.version>
+        <docker.registry>docker.io</docker.registry>
+        <docker.allowInsecureRegistries>false</docker.allowInsecureRegistries>
+        <docker.image.prefix>snomedinternational</docker.image.prefix>
+        <docker.image.tag>latest</docker.image.tag>
+        <docker.base-image>amazoncorretto:17</docker.base-image>
     </properties>
 
     <dependencies>
+        <!-- Spring -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -32,66 +34,16 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>${commons-io.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>commons-lang</groupId>
-            <artifactId>commons-lang</artifactId>
-            <version>${commons-lang.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-cache</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.ehcache</groupId>
-            <artifactId>ehcache</artifactId>
-            <classifier>jakarta</classifier>
-        </dependency>
-        <!-- Spring caching framework inside this -->
-        <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
         </dependency>
-
-        <!-- Support for Ehcache and others -->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context-support</artifactId>
-        </dependency>
-
-        <!-- Swagger -->
-<!--        <dependency>-->
-<!--            <groupId>io.springfox</groupId>-->
-<!--            <artifactId>springfox-swagger2</artifactId>-->
-<!--            <version>${swagger-ui.version}</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>io.springfox</groupId>-->
-<!--            <artifactId>springfox-swagger-ui</artifactId>-->
-<!--            <version>${swagger-ui.version}</version>-->
-<!--        </dependency>-->
-
-        <!-- JAXB API -->
-        <!--        <dependency>-->
-        <!--            <groupId>jakarta.xml.bind</groupId>-->
-        <!--            <artifactId>jakarta.xml.bind-api</artifactId>-->
-        <!--            <version>2.3.3</version>-->
-        <!--        </dependency>-->
-        <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -108,53 +60,59 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
+        <!-- Swagger / Open API -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+
+        </dependency>
+        <!-- Other -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.ehcache</groupId>
+            <artifactId>ehcache</artifactId>
+            <classifier>jakarta</classifier>
+        </dependency>
     </dependencies>
+
     <build>
-        <finalName>identity-service</finalName>
+        <finalName>${project.artifactId}</finalName>
+
         <resources>
             <resource>
-                <filtering>true</filtering>
                 <directory>src/main/resources</directory>
-                <includes>
-                    <include>**/*.xml</include>
-                </includes>
-            </resource>
-            <resource>
-                <filtering>false</filtering>
-                <directory>src/main/resources</directory>
-                <excludes>
-                    <exclude>**/*.xml</exclude>
-                </excludes>
-            </resource>
-            <resource>
                 <filtering>true</filtering>
-                <directory>${project.build.directory}/generated-resources</directory>
             </resource>
         </resources>
+
         <plugins>
-            <plugin>
-                <artifactId>maven-resources-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-webapp</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/classes/static/</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${project.parent.basedir}/identity-ui/dist/identity-ui/</directory>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>${spring-boot.version}</version>
+                <configuration>
+                    <mainClass>org.snomed.ims.Application</mainClass>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>build-info</goal>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.vafer</groupId>
