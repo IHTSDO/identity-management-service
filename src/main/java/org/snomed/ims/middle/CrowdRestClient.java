@@ -211,7 +211,7 @@ public class CrowdRestClient {
 		}
 	}
 
-    public User updateUser(User user, UserUpdateRequest request) {
+    public User updateUser(User user, UserInformationUpdateRequest request) {
         Map<String, String> updatedFields = new HashMap<>();
         updatedFields.put(NAME, user.getLogin());
         updatedFields.put(EMAIL, user.getEmail());
@@ -228,4 +228,13 @@ public class CrowdRestClient {
         restTemplate.put("/user?username={username}", updatedFields, Map.of(USERNAME, user.getLogin()));
         return this.getUser(user.getLogin());
     }
+
+	public void resetUserPassword(String username, String newPassword) {
+		Map<String, Object> params = new HashMap<>();
+		params.put(USERNAME, username);
+
+		Map<String, Object> body = new HashMap<>();
+		body.put("value", newPassword);
+		restTemplate.put("/user/password?username={username}", body, params);
+	}
 }
