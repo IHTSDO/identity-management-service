@@ -22,19 +22,27 @@ public class WebSecurityConfig {
 			"account/logout" // log out
 	);
 
+	private final ApplicationProperties applicationProperties;
+
+	public WebSecurityConfig(ApplicationProperties applicationProperties) {
+		this.applicationProperties = applicationProperties;
+	}
+
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		// Disable for API usage
 		http.csrf(AbstractHttpConfigurer::disable);
 
-		// Endpoints open
-		for (String endpoint : PERMIT_ALL) {
-			http.authorizeHttpRequests(auth -> auth.requestMatchers(new AntPathRequestMatcher(endpoint)).permitAll());
-		}
+		if (applicationProperties.isBasicAuthEnabled()) {
+			// Endpoints open
+			for (String endpoint : PERMIT_ALL) {
+				http.authorizeHttpRequests(auth -> auth.requestMatchers(new AntPathRequestMatcher(endpoint)).permitAll());
+			}
 
-		// Endpoints closed by basic
-		http.httpBasic(Customizer.withDefaults());
-		http.authorizeHttpRequests(auth -> auth.anyRequest().authenticated());
+			// Endpoints closed by basic
+			http.httpBasic(Customizer.withDefaults());
+			http.authorizeHttpRequests(auth -> auth.anyRequest().authenticated());
+		}
 
 		return http.build();
 	}

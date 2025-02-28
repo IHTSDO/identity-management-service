@@ -35,6 +35,9 @@ public class ApplicationProperties {
 	@Value("${crowd.api.auth.application-password}")
 	private String crowdApiAppPassword;
 
+	@Value("${basic.auth.enabled}")
+	private String basicAuthEnabled;
+
 	public String getProjectName() {
 		return projectName;
 	}
@@ -133,5 +136,17 @@ public class ApplicationProperties {
 
 	public void setCrowdApiAppPassword(String crowdApiAppPassword) {
 		this.crowdApiAppPassword = crowdApiAppPassword;
+	}
+
+	public String getBasicAuthEnabled() {
+		return basicAuthEnabled;
+	}
+
+	public void setBasicAuthEnabled(String basicAuthEnabled) {
+		this.basicAuthEnabled = basicAuthEnabled;
+	}
+
+	public boolean isBasicAuthEnabled() {
+		return "true".equals(basicAuthEnabled);
 	}
 }
