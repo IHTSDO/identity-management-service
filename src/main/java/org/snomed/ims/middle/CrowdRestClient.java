@@ -4,10 +4,7 @@ import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.ims.domain.crowd.GroupsCollection;
-import org.snomed.ims.domain.crowd.Session;
-import org.snomed.ims.domain.crowd.User;
-import org.snomed.ims.domain.crowd.UsersCollection;
+import org.snomed.ims.domain.crowd.*;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.*;
@@ -20,8 +17,13 @@ public class CrowdRestClient {
 	private static final Logger LOGGER = LoggerFactory.getLogger(CrowdRestClient.class);
 	public static final String USERNAME = "username";
 	public static final String PASSWORD = "password";
+    public static final String NAME = "name";
+    public static final String FIRST_NAME = "first-name";
+    public static final String LAST_NAME = "last-name";
+    public static final String DISPLAY_NAME = "display-name";
+    public static final String EMAIL = "email";
 
-	private final RestTemplate restTemplate;
+    private final RestTemplate restTemplate;
 
 	public CrowdRestClient(RestTemplate restTemplate) {
 		this.restTemplate = restTemplate;
@@ -208,4 +210,22 @@ public class CrowdRestClient {
 			return false;
 		}
 	}
+
+    public User updateUser(User user, UserUpdateRequest request) {
+        Map<String, String> updatedFields = new HashMap<>();
+        updatedFields.put(NAME, user.getLogin());
+        updatedFields.put(EMAIL, user.getEmail());
+
+        if (request.firstName() != null) {
+            updatedFields.put(FIRST_NAME, request.firstName());
+        }
+        if (request.lastName() != null) {
+            updatedFields.put(LAST_NAME, request.lastName());
+        }
+        if (request.displayName() != null) {
+            updatedFields.put(DISPLAY_NAME, request.displayName());
+        }
+        restTemplate.put("/user?username={username}", updatedFields, Map.of(USERNAME, user.getLogin()));
+        return this.getUser(user.getLogin());
+    }
 }

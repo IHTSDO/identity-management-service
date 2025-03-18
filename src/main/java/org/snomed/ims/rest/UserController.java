@@ -2,14 +2,12 @@ package org.snomed.ims.rest;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.snomed.ims.domain.crowd.User;
+import org.snomed.ims.domain.crowd.UserUpdateRequest;
 import org.snomed.ims.middle.CrowdRestClient;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -31,6 +29,17 @@ public class UserController {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		} else {
 			return new ResponseEntity<>(user, HttpStatus.OK);
+		}
+	}
+
+	@PutMapping(value = "/user", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ResponseStatus(HttpStatus.OK)
+	public ResponseEntity<User> updateUser(@RequestParam String username, @RequestBody UserUpdateRequest requestBody) {
+		User user = crowdRestClient.getUser(username);
+		if (user == null) {
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		} else {
+			return new ResponseEntity<>(crowdRestClient.updateUser(user, requestBody), HttpStatus.OK);
 		}
 	}
 
