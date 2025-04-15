@@ -211,7 +211,8 @@ public class CrowdRestClient {
 		}
 	}
 
-    public User updateUser(User user, UserInformationUpdateRequest request) {
+	@CacheEvict(value = "accountCache", key = "#token")
+	public User updateUser(User user, UserInformationUpdateRequest request, String token) {
         Map<String, String> updatedFields = new HashMap<>();
         updatedFields.put(NAME, user.getLogin());
         updatedFields.put(EMAIL, user.getEmail());

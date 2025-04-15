@@ -57,7 +57,17 @@ public class UserController {
 		if (user == null) {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		} else {
-			return new ResponseEntity<>(crowdRestClient.updateUser(user, requestBody), HttpStatus.OK);
+			String token = null;
+			Cookie[] cookies = request.getCookies();
+			if (cookies != null) {
+				for (Cookie cookie : cookies) {
+					if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
+						token = cookie.getValue();
+						break;
+					}
+				}
+			}
+			return new ResponseEntity<>(crowdRestClient.updateUser(user, requestBody, token), HttpStatus.OK);
 		}
 	}
 
