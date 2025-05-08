@@ -6,11 +6,11 @@
     <parent>
         <groupId>org.snomed</groupId>
         <artifactId>snomed-parent-bom</artifactId>
-        <version>3.10.1-SNAPSHOT</version>
+        <version>3.10.1</version>
     </parent>
 
     <artifactId>identity-management-service</artifactId>
-    <version>3.0.1-SNAPSHOT</version>
+    <version>3.0.1</version>
     <description>Web API providing single sign-on authentication and authorisation, built on top of Atlassian Crowd.</description>
     <packaging>jar</packaging>
 
