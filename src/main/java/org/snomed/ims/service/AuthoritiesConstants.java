@@ -1,4 +1,4 @@
-package org.snomed.ims.middle;
+package org.snomed.ims.service;
 
 /**
  * Constants for Spring Security authorities.

@@ -6,9 +6,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang.StringUtils;
 import org.snomed.ims.config.ApplicationProperties;
-import org.snomed.ims.middle.CrowdRestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.ims.service.IdentityProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,14 +21,14 @@ import java.util.Map;
 public class AuthController {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AuthController.class);
 
-	private final CrowdRestClient crowdRestClient;
+	private final IdentityProvider identityProvider;
 	private final String cookieName;
 	private final Integer cookieMaxAge;
 	private final String cookieDomain;
 	private final boolean cookieSecureFlag;
 
-	public AuthController(CrowdRestClient crowdRestClient, ApplicationProperties applicationProperties) {
-		this.crowdRestClient = crowdRestClient;
+	public AuthController(IdentityProvider identityProvider, ApplicationProperties applicationProperties) {
+		this.identityProvider = identityProvider;
 		this.cookieName = applicationProperties.getCookieName();
 		this.cookieMaxAge = applicationProperties.getCookieMaxAgeInt();
 		this.cookieDomain = applicationProperties.getCookieDomain();
@@ -57,7 +57,7 @@ public class AuthController {
 			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 		}
 
-		String token = crowdRestClient.authenticate(username, password);
+		String token = identityProvider.authenticate(username, password);
 		if (token == null) {
 			LOGGER.error("Failed to authenticate");
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);

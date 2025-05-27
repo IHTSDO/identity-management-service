@@ -8,7 +8,7 @@ import org.snomed.ims.config.ApplicationProperties;
 import org.snomed.ims.domain.crowd.User;
 import org.snomed.ims.domain.crowd.UserPasswordUpdateRequest;
 import org.snomed.ims.domain.crowd.UserInformationUpdateRequest;
-import org.snomed.ims.middle.CrowdRestClient;
+import org.snomed.ims.service.IdentityProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,19 +21,19 @@ import java.util.List;
 @Tag(name = "UserController")
 public class UserController {
 
-	private final CrowdRestClient crowdRestClient;
+	private final IdentityProvider identityProvider;
 
 	private final String cookieName;
 
-	public UserController(CrowdRestClient crowdRestClient, ApplicationProperties applicationProperties) {
-		this.crowdRestClient = crowdRestClient;
+	public UserController(IdentityProvider identityProvider, ApplicationProperties applicationProperties) {
+		this.identityProvider = identityProvider;
 		this.cookieName = applicationProperties.getCookieName();
 	}
 
 	@GetMapping(value = "/user", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseStatus(HttpStatus.OK)
 	public ResponseEntity<User> getUserDetails(@RequestParam String username) {
-		User user = crowdRestClient.getUser(username);
+		User user = identityProvider.getUser(username);
 		if (user == null) {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		} else {
@@ -67,7 +67,7 @@ public class UserController {
 					}
 				}
 			}
-			return new ResponseEntity<>(crowdRestClient.updateUser(user, requestBody, token), HttpStatus.OK);
+			return new ResponseEntity<>(identityProvider.updateUser(user, requestBody, token), HttpStatus.OK);
 		}
 	}
 
@@ -85,7 +85,7 @@ public class UserController {
 		if (user == null) {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		} else {
-			crowdRestClient.resetUserPassword(user.getLogin(), requestBody.newPassword());
+			identityProvider.resetUserPassword(user.getLogin(), requestBody.newPassword());
 			return new ResponseEntity<>(HttpStatus.OK);
 		}
 	}
@@ -93,7 +93,7 @@ public class UserController {
 	@GetMapping(value = "/user/role", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseStatus(HttpStatus.OK)
 	public ResponseEntity<List<String>> getUserRoles(@RequestParam String username) {
-		return new ResponseEntity<>(crowdRestClient.getUserRoles(username), HttpStatus.OK);
+		return new ResponseEntity<>(identityProvider.getUserRoles(username), HttpStatus.OK);
 	}
 
 	private User getCurrentUser(HttpServletRequest request, HttpServletResponse response) {
@@ -103,7 +103,7 @@ public class UserController {
 			for (Cookie cookie : cookies) {
 				if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
 					try {
-						user = crowdRestClient.getUserByToken(cookie.getValue());
+						user = identityProvider.getUserByToken(cookie.getValue());
 					} catch (RestClientException ex) {
 						// invalidate cookie
 						cookie.setMaxAge(0);

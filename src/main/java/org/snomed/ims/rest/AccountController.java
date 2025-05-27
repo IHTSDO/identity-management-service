@@ -9,9 +9,9 @@ import jakarta.servlet.http.HttpSession;
 import org.apache.commons.lang.StringUtils;
 import org.snomed.ims.config.ApplicationProperties;
 import org.snomed.ims.domain.crowd.User;
-import org.snomed.ims.middle.CrowdRestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.ims.service.IdentityProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -25,10 +25,10 @@ public class AccountController {
 	private static final String AUTH_HEADER_USERNAME = AUTH_HEADER_PREFIX + "username";
 
 	private final String cookieName;
-	private final CrowdRestClient crowdRestClient;
+	private final IdentityProvider identityProvider;
 
-	public AccountController(CrowdRestClient crowdRestClient, ApplicationProperties applicationProperties) {
-		this.crowdRestClient = crowdRestClient;
+	public AccountController(IdentityProvider identityProvider, ApplicationProperties applicationProperties) {
+		this.identityProvider = identityProvider;
 		this.cookieName = applicationProperties.getCookieName();
 	}
 
@@ -48,7 +48,7 @@ public class AccountController {
 			for (Cookie cookie : cookies) {
 				if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
 					if (StringUtils.isNotEmpty(cookie.getValue())) {
-						crowdRestClient.invalidateToken(cookie.getValue());
+						identityProvider.invalidateToken(cookie.getValue());
 					}
 
 					// invalidate cookie
@@ -71,7 +71,7 @@ public class AccountController {
 		if (cookies != null) {
 			for (Cookie cookie : cookies) {
 				if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
-					User user = crowdRestClient.getUserByToken(cookie.getValue());
+					User user = identityProvider.getUserByToken(cookie.getValue());
 					if (user == null) {
 						LOGGER.error("60037224-9b55-4f37-b944-eb4c1abc8fd9 Failed to get user; invalidating cookie");
 

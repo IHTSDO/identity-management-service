@@ -1,4 +1,4 @@
-package org.snomed.ims.middle;
+package org.snomed.ims.service;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
