@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * User response from Crowd.
@@ -47,6 +48,15 @@ public class User implements Serializable {
 		this.email = email;
 		this.langKey = langKey;
 		this.roles = roles;
+	}
+
+	public User publicClone() {
+		User user = new User();
+		user.setLogin(login);
+		user.setDisplayName(displayName);
+		user.setFirstName(firstName);
+		user.setLastName(lastName);
+		return user;
 	}
 
 	public String getLogin() {
@@ -122,6 +132,18 @@ public class User implements Serializable {
 
 	public void setRoles(List<String> roles) {
 		this.roles = roles;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (o == null || getClass() != o.getClass()) return false;
+		User user = (User) o;
+		return Objects.equals(login, user.login);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hashCode(login);
 	}
 
 	@Override

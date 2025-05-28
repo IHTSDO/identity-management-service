@@ -1,18 +1,19 @@
 package org.snomed.ims.service;
 
-import java.util.*;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.ims.domain.crowd.*;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.http.*;
-import org.springframework.stereotype.Component;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
-@Component
+import java.util.*;
+
 public class CrowdRestClient implements IdentityProvider {
 	private static final Logger LOGGER = LoggerFactory.getLogger(CrowdRestClient.class);
 
@@ -48,12 +49,6 @@ public class CrowdRestClient implements IdentityProvider {
 		}
 	}
 
-	/**
-	 * Return user if found by username; otherwise return null.
-	 *
-	 * @param username Username to match against User.
-	 * @return User if found by username; otherwise return null.
-	 */
 	@Override
 	public User getUser(String username) {
 		if (username == null || username.isEmpty()) {
@@ -68,12 +63,6 @@ public class CrowdRestClient implements IdentityProvider {
 		}
 	}
 
-	/**
-	 * Return user if found by token; otherwise return null.
-	 *
-	 * @param token Token to match against User.
-	 * @return User if found by token; otherwise return null.
-	 */
 	@Override
 	@Cacheable(value = "accountCache", key = "#token", unless = "#result == null")
 	public User getUserByToken(String token) {
@@ -100,12 +89,6 @@ public class CrowdRestClient implements IdentityProvider {
 		}
 	}
 
-	/**
-	 * Return roles for user if username found; otherwise return empty.
-	 *
-	 * @param username Username to match against User.
-	 * @return Roles for user if username found; otherwise return empty.
-	 */
 	@Override
 	public List<String> getUserRoles(String username) {
 		if (username == null || username.isEmpty()) {
@@ -131,15 +114,6 @@ public class CrowdRestClient implements IdentityProvider {
 		}
 	}
 
-	/**
-	 * Return users in group. If group or username not found, return empty.
-	 *
-	 * @param groupName  Group name to match against Users.
-	 * @param username   Username to match against individual User.
-	 * @param maxResults Size of page request.
-	 * @param startAt    Offset of page request.
-	 * @return Users in group. If group or username not found, return empty.
-	 */
 	@Override
 	public List<User> searchUsersByGroup(String groupName, String username, int maxResults, int startAt) {
 		if (groupName == null || groupName.isEmpty()) {
@@ -184,12 +158,6 @@ public class CrowdRestClient implements IdentityProvider {
 		}
 	}
 
-	/**
-	 * Return whether inactivating token has been successful.
-	 *
-	 * @param token Token to invalidate.
-	 * @return Whether inactivating token has been successful.
-	 */
 	@Override
 	@CacheEvict(value = "accountCache", key = "#token")
 	public boolean invalidateToken(String token) {
