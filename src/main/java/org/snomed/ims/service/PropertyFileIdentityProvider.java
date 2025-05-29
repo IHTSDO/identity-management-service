@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 import org.snomed.ims.domain.crowd.User;
 import org.snomed.ims.domain.crowd.UserInformationUpdateRequest;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 
 import java.io.File;
 import java.io.IOException;
@@ -70,7 +69,6 @@ public class PropertyFileIdentityProvider implements IdentityProvider {
 	}
 
 	@Override
-	@Cacheable(value = "accountCache", key = "#token", unless = "#result == null")
 	public User getUserByToken(String token) {
 		readFilesIfChanged();
 
@@ -143,6 +141,7 @@ public class PropertyFileIdentityProvider implements IdentityProvider {
 			User user = new User();
 			String username = (String) entry.getKey();
 			user.setLogin(username);
+			user.setActive(true);
 			users.put(username, user);
 			passwords.put(username, (String) entry.getValue());
 		}
@@ -157,6 +156,11 @@ public class PropertyFileIdentityProvider implements IdentityProvider {
 						"but not found in users file.").formatted(username));
 			}
 			user.setRoles(groups);
+		}
+		synchronized (authorisationTokens) {
+			for (Map.Entry<String, User> entry : authorisationTokens.entrySet()) {
+				entry.setValue(users.get(entry.getValue().getLogin()));
+			}
 		}
 	}
 
