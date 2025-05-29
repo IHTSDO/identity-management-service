@@ -5,16 +5,14 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang.StringUtils;
-import org.snomed.ims.config.ApplicationProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.ims.config.ApplicationProperties;
 import org.snomed.ims.service.IdentityProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 @RestController
 @Tag(name = "AuthController")
@@ -49,9 +47,9 @@ public class AuthController {
 	 */
 	@PostMapping(value = "/authenticate", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseStatus(HttpStatus.OK)
-	public ResponseEntity<Void> validateUser(@RequestBody Map<String, String> authRequest, HttpServletResponse response) {
-		String username = authRequest.get("login"); // note: existing clients use login
-		String password = authRequest.get("password");
+	public ResponseEntity<Void> validateUser(@RequestBody AuthRequest authRequest, HttpServletResponse response) {
+		String username = authRequest.getLogin();
+		String password = authRequest.getPassword();
 
 		if (StringUtils.isEmpty(username) || StringUtils.isEmpty(password)) {
 			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);

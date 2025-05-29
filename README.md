@@ -21,6 +21,6 @@ To enable file-based store set configuration item `identity-provider=FILE`.
   - `user-groups.txt`
     - This file contains a list of users and their groups. The format is `username=group1,group2,group3`.
   - Files should be stored in the same directory as the jar file.
-  - Example files can be found in the `example_file_based_user_store` directory.
+  - Copy example directory `example_file_based_user_store` to `user_store` then set `identity-provider.file.directory=user_store`.
 
 ---
