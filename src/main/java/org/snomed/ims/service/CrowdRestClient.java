@@ -1,29 +1,23 @@
-package org.snomed.ims.middle;
-
-import java.util.*;
+package org.snomed.ims.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.ims.domain.crowd.*;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.http.*;
-import org.springframework.stereotype.Component;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
-@Component
-public class CrowdRestClient {
-	private static final Logger LOGGER = LoggerFactory.getLogger(CrowdRestClient.class);
-	public static final String USERNAME = "username";
-	public static final String PASSWORD = "password";
-    public static final String NAME = "name";
-    public static final String FIRST_NAME = "first-name";
-    public static final String LAST_NAME = "last-name";
-    public static final String DISPLAY_NAME = "display-name";
-    public static final String EMAIL = "email";
+import java.util.*;
 
-    private final RestTemplate restTemplate;
+public class CrowdRestClient implements IdentityProvider {
+	private static final Logger LOGGER = LoggerFactory.getLogger(CrowdRestClient.class);
+
+	private final RestTemplate restTemplate;
 
 	public CrowdRestClient(RestTemplate restTemplate) {
 		this.restTemplate = restTemplate;
@@ -36,6 +30,7 @@ public class CrowdRestClient {
 	 * @param password Password to attempt authentication with
 	 * @return Token if authentication is successful; otherwise, return null.
 	 */
+	@Override
 	public String authenticate(String username, String password) {
 		if (username == null || username.isEmpty() || password == null || password.isEmpty()) {
 			return null;
@@ -54,12 +49,7 @@ public class CrowdRestClient {
 		}
 	}
 
-	/**
-	 * Return user if found by username; otherwise return null.
-	 *
-	 * @param username Username to match against User.
-	 * @return User if found by username; otherwise return null.
-	 */
+	@Override
 	public User getUser(String username) {
 		if (username == null || username.isEmpty()) {
 			return null;
@@ -73,12 +63,7 @@ public class CrowdRestClient {
 		}
 	}
 
-	/**
-	 * Return user if found by token; otherwise return null.
-	 *
-	 * @param token Token to match against User.
-	 * @return User if found by token; otherwise return null.
-	 */
+	@Override
 	@Cacheable(value = "accountCache", key = "#token", unless = "#result == null")
 	public User getUserByToken(String token) {
 		if (token == null || token.isEmpty()) {
@@ -104,12 +89,7 @@ public class CrowdRestClient {
 		}
 	}
 
-	/**
-	 * Return roles for user if username found; otherwise return empty.
-	 *
-	 * @param username Username to match against User.
-	 * @return Roles for user if username found; otherwise return empty.
-	 */
+	@Override
 	public List<String> getUserRoles(String username) {
 		if (username == null || username.isEmpty()) {
 			return Collections.emptyList();
@@ -134,15 +114,7 @@ public class CrowdRestClient {
 		}
 	}
 
-	/**
-	 * Return users in group. If group or username not found, return empty.
-	 *
-	 * @param groupName  Group name to match against Users.
-	 * @param username   Username to match against individual User.
-	 * @param maxResults Size of page request.
-	 * @param startAt    Offset of page request.
-	 * @return Users in group. If group or username not found, return empty.
-	 */
+	@Override
 	public List<User> searchUsersByGroup(String groupName, String username, int maxResults, int startAt) {
 		if (groupName == null || groupName.isEmpty()) {
 			return Collections.emptyList();
@@ -186,12 +158,7 @@ public class CrowdRestClient {
 		}
 	}
 
-	/**
-	 * Return whether inactivating token has been successful.
-	 *
-	 * @param token Token to invalidate.
-	 * @return Whether inactivating token has been successful.
-	 */
+	@Override
 	@CacheEvict(value = "accountCache", key = "#token")
 	public boolean invalidateToken(String token) {
 		if (token == null || token.isEmpty()) {
@@ -211,6 +178,7 @@ public class CrowdRestClient {
 		}
 	}
 
+	@Override
 	@CacheEvict(value = "accountCache", key = "#token")
 	public User updateUser(User user, UserInformationUpdateRequest request, String token) {
         Map<String, String> updatedFields = new HashMap<>();
@@ -230,6 +198,7 @@ public class CrowdRestClient {
         return this.getUser(user.getLogin());
     }
 
+	@Override
 	public void resetUserPassword(String username, String newPassword) {
 		Map<String, Object> params = new HashMap<>();
 		params.put(USERNAME, username);

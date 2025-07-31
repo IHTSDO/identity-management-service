@@ -7,10 +7,10 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.snomed.ims.config.ApplicationProperties;
 import org.snomed.ims.domain.crowd.User;
-import org.snomed.ims.middle.AuthoritiesConstants;
-import org.snomed.ims.middle.CrowdRestClient;
+import org.snomed.ims.service.AuthoritiesConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.ims.service.IdentityProvider;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpStatus;
@@ -22,12 +22,12 @@ import org.springframework.web.bind.annotation.*;
 public class CacheController {
 	private static final Logger LOGGER = LoggerFactory.getLogger(CacheController.class);
 
-	private final CrowdRestClient crowdRestClient;
+	private final IdentityProvider identityProvider;
 	private final CacheManager cacheManager;
 	private final String cookieName;
 
-	public CacheController(CrowdRestClient crowdRestClient, CacheManager cacheManager, ApplicationProperties applicationProperties) {
-		this.crowdRestClient = crowdRestClient;
+	public CacheController(IdentityProvider identityProvider, CacheManager cacheManager, ApplicationProperties applicationProperties) {
+		this.identityProvider = identityProvider;
 		this.cacheManager = cacheManager;
 		this.cookieName = applicationProperties.getCookieName();
 	}
@@ -50,7 +50,7 @@ public class CacheController {
 	private ResponseEntity<String> doClearCache(HttpServletResponse response, Cookie[] cookies) {
 		for (Cookie cookie : cookies) {
 			if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
-				User user = crowdRestClient.getUserByToken(cookie.getValue());
+				User user = identityProvider.getUserByToken(cookie.getValue());
 				if (user == null) {
 					LOGGER.error("4a19d36a-7cd1-4f25-be16-c7c19d63238e Failed to find user by token; invalidating cookie.");
 
