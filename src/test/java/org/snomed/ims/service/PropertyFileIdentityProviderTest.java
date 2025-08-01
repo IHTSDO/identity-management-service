@@ -124,7 +124,9 @@ class PropertyFileIdentityProviderTest {
         String username = "testUser";
         String newPassword = "newPass";
         assertThrows(UnsupportedOperationException.class, () -> {
-            identityProvider.resetUserPassword(username, newPassword);
+            User user = new User();
+            user.setLogin(username);
+            identityProvider.resetUserPassword(user, newPassword);
         }, "resetUserPassword should throw UnsupportedOperationException");
     }
 }

@@ -69,5 +69,5 @@ public interface IdentityProvider {
 
 	User updateUser(User user, UserInformationUpdateRequest request, String token);
 
-	void resetUserPassword(String username, String newPassword);
+	void resetUserPassword(User user, String newPassword);
 }

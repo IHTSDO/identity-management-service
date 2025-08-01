@@ -120,7 +120,7 @@ public class PropertyFileIdentityProvider implements IdentityProvider {
 	}
 
 	@Override
-	public void resetUserPassword(String username, String newPassword) {
+	public void resetUserPassword(User user, String newPassword) {
 		throw new UnsupportedOperationException("Password reset is not supported via API.");
 	}
 

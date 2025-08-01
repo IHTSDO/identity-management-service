@@ -199,9 +199,9 @@ public class CrowdRestClient implements IdentityProvider {
     }
 
 	@Override
-	public void resetUserPassword(String username, String newPassword) {
+	public void resetUserPassword(User user, String newPassword) {
 		Map<String, Object> params = new HashMap<>();
-		params.put(USERNAME, username);
+		params.put(USERNAME, user.getLogin());
 
 		Map<String, Object> body = new HashMap<>();
 		body.put("value", newPassword);

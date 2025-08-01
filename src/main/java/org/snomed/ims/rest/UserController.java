@@ -85,7 +85,7 @@ public class UserController {
 		if (user == null) {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		} else {
-			identityProvider.resetUserPassword(user.getLogin(), requestBody.newPassword());
+			identityProvider.resetUserPassword(user, requestBody.newPassword());
 			return new ResponseEntity<>(HttpStatus.OK);
 		}
 	}
