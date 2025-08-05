@@ -17,6 +17,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 public class KeyCloakIdentityProvider implements IdentityProvider {
 
@@ -295,29 +296,29 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         return user;
     }
 
-    private List<User> getUsersForGroup(String groupName, String username, List<KeyCloakGroup> keyCloakGroups, HttpEntity<String> requestEntity) {
-        Set<User> users = new HashSet<>();
-        for (KeyCloakGroup group : keyCloakGroups) {
-            if (!group.getName().equals(groupName)) continue;
-            ResponseEntity<List<KeyCloakUser>> userResponse = restTemplate.exchange(
-                    ADMIN_REALMS + this.keycloakRealms + "/groups/" + group.getId() + "/members",
-                    HttpMethod.GET,
-                    requestEntity,
-                    new ParameterizedTypeReference<>() {
+    private List<User> getUsersForGroup(final String groupName, final String username, List<KeyCloakGroup> keyCloakGroups, HttpEntity<String> requestEntity) {
+        return keyCloakGroups.stream()
+                .filter(group -> group.getName().equals(groupName))
+                .flatMap(group -> {
+                    ResponseEntity<List<KeyCloakUser>> userResponse = restTemplate.exchange(
+                            ADMIN_REALMS + this.keycloakRealms + "/groups/" + group.getId() + "/members?max=-1",
+                            HttpMethod.GET,
+                            requestEntity,
+                            new ParameterizedTypeReference<>() {
+                            }
+                    );
+                    List<KeyCloakUser> keyCloakUsers = userResponse.getBody();
+                    if (CollectionUtils.isEmpty(keyCloakUsers)) {
+                        return Stream.empty();
                     }
-            );
-            List<KeyCloakUser> keyCloakUsers = userResponse.getBody();
-            if (!CollectionUtils.isEmpty(keyCloakUsers)) {
-                for (KeyCloakUser keyCloakUser : keyCloakUsers) {
-                    if (!keyCloakUser.isEnabled() || (StringUtils.hasLength(username) && !keyCloakUser.getUsername().contains(username))) {
-                        continue;
-                    }
-                    User user = toUser(keyCloakUser);
-                    user.setEmail(null);
-                    users.add(user);
-                }
-            }
-        }
-        return new ArrayList<>(users);
+                    return keyCloakUsers.stream()
+                            .filter(KeyCloakUser::isEnabled)
+                            .filter(u -> !StringUtils.hasLength(username) || u.getUsername().contains(username))
+                            .map(u -> {
+                                User user = toUser(u);
+                                user.setEmail(null);
+                                return user;
+                            });
+                }).distinct().toList();
     }
 }
