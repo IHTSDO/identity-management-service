@@ -1,4 +1,4 @@
-package org.snomed.ims.domain.crowd;
+package org.snomed.ims.domain;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;

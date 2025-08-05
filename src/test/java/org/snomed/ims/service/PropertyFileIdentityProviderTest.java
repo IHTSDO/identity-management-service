@@ -2,8 +2,8 @@ package org.snomed.ims.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.snomed.ims.domain.crowd.User;
-import org.snomed.ims.domain.crowd.UserInformationUpdateRequest;
+import org.snomed.ims.domain.User;
+import org.snomed.ims.domain.UserInformationUpdateRequest;
 
 import java.io.IOException;
 import java.util.List;
@@ -87,7 +87,7 @@ class PropertyFileIdentityProviderTest {
     void searchUsersByGroup_ValidGroup_ReturnsUsers() {
         String groupName = "test-group1";
         String username = null;
-        List<User> users = identityProvider.searchUsersByGroup(groupName, username, 10, 0);
+        List<User> users = identityProvider.searchUsersByGroup(null, groupName, username, 10, 0);
         assertNotNull(users, "Users list should not be null");
         assertFalse(users.isEmpty(), "Users list should contain users");
     }
@@ -124,7 +124,9 @@ class PropertyFileIdentityProviderTest {
         String username = "testUser";
         String newPassword = "newPass";
         assertThrows(UnsupportedOperationException.class, () -> {
-            identityProvider.resetUserPassword(username, newPassword);
+            User user = new User();
+            user.setLogin(username);
+            identityProvider.resetUserPassword(user, newPassword);
         }, "resetUserPassword should throw UnsupportedOperationException");
     }
 }

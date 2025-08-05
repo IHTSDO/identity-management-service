@@ -26,6 +26,24 @@ public class ApplicationProperties {
 	@Value("${cookie.secure}")
 	private String cookieSecureFlag;
 
+	@Value("${keycloak.server.url}")
+	private String keycloakUrl;
+
+	@Value("${keycloak.realms}")
+	private String keycloakRealms;
+
+	@Value("${keycloak.client-id}")
+	private String keycloakClientId;
+
+	@Value("${keycloak.client-secret}")
+	private String keycloakClientSecrete;
+
+	@Value("${keycloak.admin.username}")
+	private String keycloakAdminUsername;
+
+	@Value("${keycloak.admin.password}")
+	private String keycloakAdminPassword;
+
 	@Value("${crowd.api.url}")
 	private String crowdApiUrl;
 
@@ -112,6 +130,54 @@ public class ApplicationProperties {
 
 	public void setCookieSecureFlag(String cookieSecureFlag) {
 		this.cookieSecureFlag = cookieSecureFlag;
+	}
+
+	public String getKeycloakUrl() {
+		return keycloakUrl;
+	}
+
+	public void setKeycloakUrl(String keycloakUrl) {
+		this.keycloakUrl = keycloakUrl;
+	}
+
+	public String getKeycloakRealms() {
+		return keycloakRealms;
+	}
+
+	public void setKeycloakRealms(String keycloakRealms) {
+		this.keycloakRealms = keycloakRealms;
+	}
+
+	public String getKeycloakClientId() {
+		return keycloakClientId;
+	}
+
+	public void setKeycloakClientId(String keycloakClientId) {
+		this.keycloakClientId = keycloakClientId;
+	}
+
+	public String getKeycloakClientSecrete() {
+		return keycloakClientSecrete;
+	}
+
+	public void setKeycloakClientSecrete(String keycloakClientSecrete) {
+		this.keycloakClientSecrete = keycloakClientSecrete;
+	}
+
+	public String getKeycloakAdminUsername() {
+		return keycloakAdminUsername;
+	}
+
+	public void setKeycloakAdminUsername(String keycloakAdminUsername) {
+		this.keycloakAdminUsername = keycloakAdminUsername;
+	}
+
+	public String getKeycloakAdminPassword() {
+		return keycloakAdminPassword;
+	}
+
+	public void setKeycloakAdminPassword(String keycloakAdminPassword) {
+		this.keycloakAdminPassword = keycloakAdminPassword;
 	}
 
 	public String getCrowdApiUrl() {

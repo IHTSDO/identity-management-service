@@ -1,5 +1,6 @@
-package org.snomed.ims.domain.crowd;
+package org.snomed.ims.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -13,6 +14,8 @@ import java.util.Objects;
 @JsonSerialize(using = UserView.class)
 public class User implements Serializable {
 	private static final long serialVersionUID = 1L;
+
+	private String id;
 
 	@JsonProperty("name")
 	private String login;
@@ -57,6 +60,15 @@ public class User implements Serializable {
 		user.setFirstName(firstName);
 		user.setLastName(lastName);
 		return user;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	@JsonIgnore
+	public String getId() {
+		return id;
 	}
 
 	public String getLogin() {

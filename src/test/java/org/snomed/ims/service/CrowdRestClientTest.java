@@ -5,7 +5,7 @@ import org.mockito.Mockito;
 import org.snomed.ims.domain.crowd.Group;
 import org.snomed.ims.domain.crowd.GroupsCollection;
 import org.snomed.ims.domain.crowd.Session;
-import org.snomed.ims.domain.crowd.User;
+import org.snomed.ims.domain.User;
 import org.snomed.ims.domain.crowd.UsersCollection;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.client.RestClientException;
@@ -230,7 +230,7 @@ class CrowdRestClientTest {
 	@Test
 	void searchUsersByGroup_ShouldReturnExpected_WhenGivenNullGroupName() {
 		// when
-		List<User> result = crowdRestClient.searchUsersByGroup(null, null, 0, 10);
+		List<User> result = crowdRestClient.searchUsersByGroup(null, null, null, 0, 10);
 
 		// then
 		assertEquals(0, result.size());
@@ -242,7 +242,7 @@ class CrowdRestClientTest {
 		givenUsersNotFound();
 
 		// when
-		List<User> result = crowdRestClient.searchUsersByGroup(null, null, 0, 10);
+		List<User> result = crowdRestClient.searchUsersByGroup(null, null, null, 0, 10);
 
 		// then
 		assertEquals(0, result.size());
@@ -255,7 +255,7 @@ class CrowdRestClientTest {
 		givenUserKnown(new User().setLogin("test-username"));
 
 		// when
-		List<User> result = crowdRestClient.searchUsersByGroup("test-group-name", null, 0, 10);
+		List<User> result = crowdRestClient.searchUsersByGroup(null, "test-group-name", null, 0, 10);
 
 		// then
 		assertEquals(1, result.size());
@@ -269,7 +269,7 @@ class CrowdRestClientTest {
 		givenUserKnown(new User().setLogin("test-username").setEmail("test-email"));
 
 		// when
-		List<User> result = crowdRestClient.searchUsersByGroup("test-group-name", "test-username", 0, 10);
+		List<User> result = crowdRestClient.searchUsersByGroup(null, "test-group-name", "test-username", 0, 10);
 
 		// then
 		assertEquals(1, result.size());

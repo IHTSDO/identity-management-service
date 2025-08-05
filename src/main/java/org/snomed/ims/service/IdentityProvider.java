@@ -1,7 +1,7 @@
 package org.snomed.ims.service;
 
-import org.snomed.ims.domain.crowd.User;
-import org.snomed.ims.domain.crowd.UserInformationUpdateRequest;
+import org.snomed.ims.domain.User;
+import org.snomed.ims.domain.UserInformationUpdateRequest;
 
 import java.util.List;
 
@@ -57,7 +57,7 @@ public interface IdentityProvider {
 	 * @param startAt    Offset of page request.
 	 * @return Users in group. If group or username not found, return empty.
 	 */
-	List<User> searchUsersByGroup(String groupName, String username, int maxResults, int startAt);
+	List<User> searchUsersByGroup(String currentUserId, String groupName, String username, int maxResults, int startAt);
 
 	/**
 	 * Return whether inactivating token has been successful.
@@ -69,5 +69,5 @@ public interface IdentityProvider {
 
 	User updateUser(User user, UserInformationUpdateRequest request, String token);
 
-	void resetUserPassword(String username, String newPassword);
+	void resetUserPassword(User user, String newPassword);
 }

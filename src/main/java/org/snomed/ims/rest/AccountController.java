@@ -8,7 +8,7 @@ import jakarta.servlet.http.HttpSession;
 
 import org.apache.commons.lang.StringUtils;
 import org.snomed.ims.config.ApplicationProperties;
-import org.snomed.ims.domain.crowd.User;
+import org.snomed.ims.domain.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.ims.service.IdentityProvider;

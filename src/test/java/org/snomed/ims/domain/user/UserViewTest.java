@@ -3,8 +3,8 @@ package org.snomed.ims.domain.user;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import org.snomed.ims.domain.crowd.User;
-import org.snomed.ims.domain.crowd.UserView;
+import org.snomed.ims.domain.User;
+import org.snomed.ims.domain.UserView;
 
 import java.util.List;
 

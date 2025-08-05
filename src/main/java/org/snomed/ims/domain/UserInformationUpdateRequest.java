@@ -1,4 +1,4 @@
-package org.snomed.ims.domain.crowd;
+package org.snomed.ims.domain;
 
 public record UserInformationUpdateRequest(String firstName, String lastName, String displayName) {
 }
