@@ -5,9 +5,9 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.snomed.ims.config.ApplicationProperties;
-import org.snomed.ims.domain.crowd.User;
-import org.snomed.ims.domain.crowd.UserPasswordUpdateRequest;
-import org.snomed.ims.domain.crowd.UserInformationUpdateRequest;
+import org.snomed.ims.domain.User;
+import org.snomed.ims.domain.UserPasswordUpdateRequest;
+import org.snomed.ims.domain.UserInformationUpdateRequest;
 import org.snomed.ims.service.IdentityProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -85,7 +85,7 @@ public class UserController {
 		if (user == null) {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		} else {
-			identityProvider.resetUserPassword(user.getLogin(), requestBody.newPassword());
+			identityProvider.resetUserPassword(user, requestBody.newPassword());
 			return new ResponseEntity<>(HttpStatus.OK);
 		}
 	}

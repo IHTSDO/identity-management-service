@@ -2,7 +2,7 @@ package org.snomed.ims.config;
 
 import org.ehcache.event.CacheEvent;
 import org.ehcache.event.CacheEventListener;
-import org.snomed.ims.domain.crowd.User;
+import org.snomed.ims.domain.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

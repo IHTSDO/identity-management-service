@@ -2,8 +2,8 @@ package org.snomed.ims.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.ims.domain.crowd.User;
-import org.snomed.ims.domain.crowd.UserInformationUpdateRequest;
+import org.snomed.ims.domain.User;
+import org.snomed.ims.domain.UserInformationUpdateRequest;
 import org.springframework.cache.annotation.CacheEvict;
 
 import java.io.File;
@@ -93,7 +93,7 @@ public class PropertyFileIdentityProvider implements IdentityProvider {
 	}
 
 	@Override
-	public List<User> searchUsersByGroup(String groupName, String username, int maxResults, int startAt) {
+	public List<User> searchUsersByGroup(String currentUserId, String groupName, String username, int maxResults, int startAt) {
 		return users.values().stream()
 				.filter(user -> (username == null || username.equals(user.getLogin())) && user.getRoles().contains(groupName))
 				.map(User::publicClone)
@@ -120,7 +120,7 @@ public class PropertyFileIdentityProvider implements IdentityProvider {
 	}
 
 	@Override
-	public void resetUserPassword(String username, String newPassword) {
+	public void resetUserPassword(User user, String newPassword) {
 		throw new UnsupportedOperationException("Password reset is not supported via API.");
 	}
 

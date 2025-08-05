@@ -1,6 +1,7 @@
 package org.snomed.ims.domain.crowd;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.snomed.ims.domain.User;
 
 import java.util.ArrayList;
 import java.util.Collections;

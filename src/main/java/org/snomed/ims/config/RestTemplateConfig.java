@@ -13,11 +13,18 @@ public class RestTemplateConfig {
 		this.applicationProperties = applicationProperties;
 	}
 
-	@Bean
-	public RestTemplate restTemplate() {
+	@Bean(name = "crowd")
+	public RestTemplate crowdRestTemplate() {
 		return new RestTemplateBuilder()
 				.rootUri(applicationProperties.getCrowdApiUrl())
 				.basicAuthentication(applicationProperties.getCrowdApiAppName(), applicationProperties.getCrowdApiAppPassword())
+				.build();
+	}
+
+	@Bean(name = "keycloak")
+	public RestTemplate keyCloakRestTemplate() {
+		return new RestTemplateBuilder()
+				.rootUri(applicationProperties.getKeycloakUrl())
 				.build();
 	}
 }

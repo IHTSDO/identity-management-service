@@ -3,7 +3,7 @@ package org.snomed.ims.rest;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.snomed.ims.domain.crowd.Session;
-import org.snomed.ims.domain.crowd.User;
+import org.snomed.ims.domain.User;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.web.client.RestClientException;
 

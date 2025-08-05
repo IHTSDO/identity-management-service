@@ -2,6 +2,8 @@ package org.snomed.ims.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.ims.domain.User;
+import org.snomed.ims.domain.UserInformationUpdateRequest;
 import org.snomed.ims.domain.crowd.*;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -115,7 +117,7 @@ public class CrowdRestClient implements IdentityProvider {
 	}
 
 	@Override
-	public List<User> searchUsersByGroup(String groupName, String username, int maxResults, int startAt) {
+	public List<User> searchUsersByGroup(String currentUserId, String groupName, String username, int maxResults, int startAt) {
 		if (groupName == null || groupName.isEmpty()) {
 			return Collections.emptyList();
 		}
@@ -199,9 +201,9 @@ public class CrowdRestClient implements IdentityProvider {
     }
 
 	@Override
-	public void resetUserPassword(String username, String newPassword) {
+	public void resetUserPassword(User user, String newPassword) {
 		Map<String, Object> params = new HashMap<>();
-		params.put(USERNAME, username);
+		params.put(USERNAME, user.getLogin());
 
 		Map<String, Object> body = new HashMap<>();
 		body.put("value", newPassword);
