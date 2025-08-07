@@ -27,6 +27,7 @@ public class UserView extends JsonSerializer<User> {
 		withPropertyNullable(jsonGenerator, "active", user.isActive());
 		withPropertyNullable(jsonGenerator, "username", user.getLogin()); // Backwards compatible
 		withPropertyNullable(jsonGenerator, "roles", user.getRoles());
+		withPropertyNullable(jsonGenerator, "appAudiences", user.getAppAudiences());
 		jsonGenerator.writeEndObject();
 	}
 
