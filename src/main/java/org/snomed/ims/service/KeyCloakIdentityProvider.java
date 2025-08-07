@@ -25,6 +25,8 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
     private static final String ADMIN_REALMS = "/admin/realms/";
     private static final String REALMS = "/realms/";
     private static final String USERS = "/users/";
+    public static final String CLIENT_ID = "client_id";
+    public static final String CLIENT_SECRET = "client_secret";
 
     private final RestTemplate restTemplate;
 
@@ -56,8 +58,8 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
             map.add("grant_type", "password");
             map.add("scope", "openid");
-            map.add("client_id", this.keycloakClientId);
-            map.add("client_secret", this.keycloakClientSecrete);
+            map.add(CLIENT_ID, this.keycloakClientId);
+            map.add(CLIENT_SECRET, this.keycloakClientSecrete);
             map.add(USERNAME, username);
             map.add(PASSWORD, password);
 
@@ -108,24 +110,39 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             return null;
         }
         try {
+            MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+            body.add(CLIENT_ID, this.keycloakClientId);
+            body.add(CLIENT_SECRET, this.keycloakClientSecrete);
+            body.add("token", token);
+
             HttpHeaders headers = new HttpHeaders();
-            headers.setBearerAuth(token);
-            HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
+
             ResponseEntity<HashMap> response = restTemplate.exchange(
-                    REALMS + this.keycloakRealms + "/protocol/openid-connect/userinfo",
-                    HttpMethod.GET,
-                    requestEntity,
+                    REALMS + this.keycloakRealms + "/protocol/openid-connect/token/introspect",
+                    HttpMethod.POST,
+                    request,
                     HashMap.class
             );
 
-
             Map map = response.getBody();
-            if (map == null) {
-                return null;
-            }
-            String username = map.get("preferred_username").toString();
-            User user = getUser(username);
-            user.setRoles(getUserRoles(username));
+            if (map == null) return null;
+
+            boolean active = Boolean.parseBoolean(map.get("active").toString());
+            if (!active) return null;
+
+            User user = new User();
+            user.setId(map.get("sub").toString());
+            user.setLogin(map.get("username").toString());
+            user.setLastName(map.get("family_name").toString());
+            user.setFirstName(map.get("given_name").toString());
+            user.setDisplayName(map.get("name").toString());
+            user.setEmail(map.get("email").toString());
+            user.setAppAudiences((ArrayList) map.get("aud"));
+            user.setActive(true);
+            setRoleToUser(user, map);
+
             return user;
         } catch (Exception e) {
             LOGGER.error("fdec3996-b2ef-4811-8e5a-86df6c2bbc25 Failed to get user by token", e);
@@ -234,8 +251,8 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         try {
             MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
             map.add("token", token);
-            map.add("client_id", this.keycloakClientId);
-            map.add("client_secret", this.keycloakClientSecrete);
+            map.add(CLIENT_ID, this.keycloakClientId);
+            map.add(CLIENT_SECRET, this.keycloakClientSecrete);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -294,6 +311,17 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         user.setActive(keyCloakUser.isEnabled());
 
         return user;
+    }
+
+    private void setRoleToUser(User user, Map map) {
+        user.setRoles(new ArrayList<>());
+        Map<String, Object> resourceAccess = (HashMap) map.get("resource_access");
+        for (Map.Entry<String, Object> entry : resourceAccess.entrySet()) {
+            List<Object> roles = (List<Object>) ((HashMap) entry.getValue()).get("roles");
+            for (Object role : roles) {
+                user.getRoles().add(AuthoritiesConstants.ROLE_PREFIX + role.toString());
+            }
+        }
     }
 
     private List<User> getUsersForGroup(final String groupName, final String username, List<KeyCloakGroup> keyCloakGroups, HttpEntity<String> requestEntity) {
