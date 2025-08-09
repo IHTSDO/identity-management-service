@@ -51,10 +51,12 @@ class AccountControllerTest extends IntegrationTest {
 
 		// when
 		ResultActions resultActions = get(GET_ACCOUNT, cookie);
-		int status = getStatus(resultActions);
+        int status = getStatus(resultActions);
+        String location = getResponseHeader(resultActions, "Location");
 
 		// then
-		assertEquals(403, status);
+        assertEquals(302, status);
+        assertTrue(location != null && location.contains("/protocol/openid-connect/auth") && location.contains("prompt=none"));
 	}
 
 	@Test
