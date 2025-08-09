@@ -7,30 +7,63 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import org.apache.commons.lang.StringUtils;
-import org.snomed.ims.config.ApplicationProperties;
-import org.snomed.ims.domain.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.ims.config.ApplicationProperties;
+import org.snomed.ims.domain.User;
 import org.snomed.ims.service.IdentityProvider;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
+
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 @RestController
 @Tag(name = "AccountController")
 public class AccountController {
-	private static final Logger LOGGER = LoggerFactory.getLogger(AccountController.class);
-	private static final String AUTH_HEADER_PREFIX = "X-AUTH-";
-	private static final String AUTH_HEADER_USERNAME = AUTH_HEADER_PREFIX + "username";
+    private static final Logger LOGGER = LoggerFactory.getLogger(AccountController.class);
+    private static final String AUTH_HEADER_PREFIX = "X-AUTH-";
+    private static final String AUTH_HEADER_USERNAME = AUTH_HEADER_PREFIX + "username";
 
-	private final String cookieName;
-	private final IdentityProvider identityProvider;
+    private final IdentityProvider identityProvider;
 
-	public AccountController(IdentityProvider identityProvider, ApplicationProperties applicationProperties) {
-		this.identityProvider = identityProvider;
-		this.cookieName = applicationProperties.getCookieName();
-	}
+    private final String cookieName;
+    private final Integer cookieMaxAge;
+    private final String cookieDomain;
+    private final boolean cookieSecureFlag;
+
+    private final String keycloakUrl;
+    private final String keycloakRealm;
+    private final String keycloakClientId;
+    private final String keycloakClientSecret;
+
+    @Autowired
+    @Qualifier("keycloak")
+    private RestTemplate keycloakRestTemplate;
+
+    public AccountController(IdentityProvider identityProvider, ApplicationProperties applicationProperties) {
+        this.identityProvider = identityProvider;
+        this.cookieName = applicationProperties.getCookieName();
+        this.cookieMaxAge = applicationProperties.getCookieMaxAgeInt();
+        this.cookieDomain = applicationProperties.getCookieDomain();
+        this.cookieSecureFlag = applicationProperties.isCookieSecure();
+        this.keycloakUrl = applicationProperties.getKeycloakUrl();
+        this.keycloakRealm = applicationProperties.getKeycloakRealms();
+        this.keycloakClientId = applicationProperties.getKeycloakClientId();
+        this.keycloakClientSecret = applicationProperties.getKeycloakClientSecrete();
+    }
 
 	/**
 	 * Logout
@@ -64,24 +97,27 @@ public class AccountController {
 	/**
 	 * Get the current user
 	 */
-	@GetMapping(value = "/account", produces = MediaType.APPLICATION_JSON_VALUE)
-	@ResponseStatus(HttpStatus.OK)
-	public ResponseEntity<User> getAccount(HttpServletRequest request, HttpServletResponse response) {
+    @GetMapping(value = "/account", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<User> getAccount(HttpServletRequest request, HttpServletResponse response) {
 		Cookie[] cookies = request.getCookies();
 		if (cookies != null) {
 			for (Cookie cookie : cookies) {
 				if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
 					User user = identityProvider.getUserByToken(cookie.getValue());
-					if (user == null) {
-						LOGGER.error("60037224-9b55-4f37-b944-eb4c1abc8fd9 Failed to get user; invalidating cookie");
+                    if (user == null) {
+                        LOGGER.error("60037224-9b55-4f37-b944-eb4c1abc8fd9 Failed to get user; invalidating cookie and initiating passive OIDC check");
 
-						cookie.setMaxAge(0);
-						cookie.setValue("");
-						cookie.setPath("/");
-						response.addCookie(cookie);
+                        cookie.setMaxAge(0);
+                        cookie.setValue("");
+                        cookie.setPath("/");
+                        response.addCookie(cookie);
 
-						return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-					}
+                        String authUrl = buildAuthorizationUrl(buildRedirectUri(request), true);
+                        return ResponseEntity.status(HttpStatus.FOUND)
+                                .location(URI.create(authUrl))
+                                .build();
+                    }
 
 					response.setHeader("Content-Type", "application/json;charset=UTF-8");
 					response.setHeader(AUTH_HEADER_USERNAME, user.getLogin());
@@ -92,6 +128,121 @@ public class AccountController {
 			}
 		}
 
-		return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        // No IMS cookie. Handle OIDC passive check via prompt=none
+        String error = request.getParameter("error");
+        String code = request.getParameter("code");
+
+        // If Keycloak indicated login is required, redirect to interactive login (no prompt=none)
+        if ("login_required".equals(error)) {
+            String interactiveAuthUrl = buildAuthorizationUrl(buildRedirectUri(request), false);
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .header(HttpHeaders.LOCATION, interactiveAuthUrl)
+                    .build();
+        }
+
+        // If Keycloak returned an auth code, exchange it for tokens and set IMS cookie
+        if (code != null && !code.isEmpty()) {
+            try {
+                String redirectUri = buildRedirectUri(request);
+                String accessToken = exchangeCodeForAccessToken(code, redirectUri);
+                if (accessToken == null || accessToken.isEmpty()) {
+                    return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+                }
+
+                // set IMS cookie
+                Cookie imsCookie = new Cookie(cookieName, accessToken);
+                if (cookieMaxAge != null) {
+                    imsCookie.setMaxAge(cookieMaxAge);
+                }
+                imsCookie.setDomain(cookieDomain);
+                imsCookie.setSecure(cookieSecureFlag);
+                imsCookie.setPath("/");
+                response.addCookie(imsCookie);
+
+                User user = identityProvider.getUserByToken(accessToken);
+                if (user == null) {
+                    return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+                }
+                response.setHeader("Content-Type", "application/json;charset=UTF-8");
+                response.setHeader(AUTH_HEADER_USERNAME, user.getLogin());
+                response.setHeader(AUTH_HEADER_PREFIX + "roles", StringUtils.join(user.getRoles(), ","));
+                return new ResponseEntity<>(user, HttpStatus.OK);
+            } catch (Exception e) {
+                LOGGER.error("ea9b3b98-8f47-4d8c-9b93-9b7a23b6d2f3 Failed to exchange code for token", e);
+                return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+            }
+        }
+
+        // Initiate passive check with prompt=none to avoid login prompt
+        String authUrl = buildAuthorizationUrl(buildRedirectUri(request), true);
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(authUrl))
+                .build();
 	}
+
+    private String buildAuthorizationUrl(String redirectUri, boolean promptNone) {
+        StringBuilder url = new StringBuilder();
+        url.append(keycloakUrl)
+                .append("/realms/")
+                .append(keycloakRealm)
+                .append("/protocol/openid-connect/auth")
+                .append("?client_id=").append(URLEncoder.encode(keycloakClientId, StandardCharsets.UTF_8))
+                .append("&redirect_uri=").append(URLEncoder.encode(redirectUri, StandardCharsets.UTF_8))
+                .append("&response_type=code")
+                .append("&scope=").append(URLEncoder.encode("openid profile email", StandardCharsets.UTF_8));
+        if (promptNone) {
+            url.append("&prompt=none");
+        }
+        return url.toString();
+    }
+
+    private String buildRedirectUri(HttpServletRequest request) {
+        // Build absolute URL to this endpoint (without query params)
+        String scheme = request.getHeader("X-Forwarded-Proto");
+        if (scheme == null || scheme.isEmpty()) {
+            scheme = request.getScheme();
+        }
+        String host = request.getHeader("X-Forwarded-Host");
+        if (host == null || host.isEmpty()) {
+            host = request.getHeader("Host");
+        }
+        // Fallbacks when Host headers are missing (e.g., during tests)
+        if (host == null || host.isEmpty()) {
+            host = request.getServerName();
+            int port = request.getServerPort();
+            boolean isDefaultPort = ("http".equalsIgnoreCase(scheme) && port == 80)
+                    || ("https".equalsIgnoreCase(scheme) && port == 443);
+            if (!isDefaultPort && port > 0) {
+                host = host + ":" + port;
+            }
+        }
+        String requestUri = request.getRequestURI();
+        StringBuilder redirect = new StringBuilder();
+        redirect.append(scheme).append("://").append(host).append(requestUri);
+        return redirect.toString();
+    }
+
+    private String exchangeCodeForAccessToken(String code, String redirectUri) {
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("grant_type", "authorization_code");
+        form.add("code", code);
+        form.add("redirect_uri", redirectUri);
+        form.add("client_id", keycloakClientId);
+        form.add("client_secret", keycloakClientSecret);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(form, headers);
+
+        ResponseEntity<Map<String, Object>> tokenResponse = keycloakRestTemplate.exchange(
+                "/realms/" + keycloakRealm + "/protocol/openid-connect/token",
+                HttpMethod.POST,
+                requestEntity,
+                new org.springframework.core.ParameterizedTypeReference<>() {}
+        );
+        Map<String, Object> body = tokenResponse.getBody();
+        if (body == null) return null;
+        Object accessToken = body.get("access_token");
+        return accessToken == null ? null : accessToken.toString();
+    }
 }
