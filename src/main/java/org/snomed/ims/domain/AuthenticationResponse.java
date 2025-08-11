@@ -1,6 +1,7 @@
 package org.snomed.ims.domain;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 
 public class AuthenticationResponse {
     
@@ -10,7 +11,6 @@ public class AuthenticationResponse {
     @JsonProperty("loginUrl")
     private final String loginUrl;
     
-    @JsonProperty("user")
     private final User user;
     
     public AuthenticationResponse(boolean authenticated, String loginUrl, User user) {
@@ -35,7 +35,44 @@ public class AuthenticationResponse {
         return loginUrl;
     }
     
-    public User getUser() {
-        return user;
+    // User properties at the top level for backward compatibility
+    @JsonProperty("login")
+    public String getLogin() {
+        return user != null ? user.getLogin() : null;
+    }
+    
+    @JsonProperty("firstName")
+    public String getFirstName() {
+        return user != null ? user.getFirstName() : null;
+    }
+    
+    @JsonProperty("lastName")
+    public String getLastName() {
+        return user != null ? user.getLastName() : null;
+    }
+    
+    @JsonProperty("email")
+    public String getEmail() {
+        return user != null ? user.getEmail() : null;
+    }
+    
+    @JsonProperty("displayName")
+    public String getDisplayName() {
+        return user != null ? user.getDisplayName() : null;
+    }
+    
+    @JsonProperty("active")
+    public Boolean getActive() {
+        return user != null ? user.getActive() : null;
+    }
+    
+    @JsonProperty("username")
+    public String getUsername() {
+        return user != null ? user.getLogin() : null;
+    }
+    
+    @JsonProperty("roles")
+    public List<String> getRoles() {
+        return user != null ? user.getRoles() : null;
     }
 }
