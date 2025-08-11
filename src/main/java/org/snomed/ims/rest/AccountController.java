@@ -190,8 +190,8 @@ public class AccountController {
     }
 
     private String buildLoginUrl(HttpServletRequest request) {
-        String currentUrl = buildCurrentUrl(request);
-        String returnTo = URLEncoder.encode(currentUrl, StandardCharsets.UTF_8);
+        // Redirect to frontend home page instead of current API endpoint
+        String returnTo = URLEncoder.encode("/#/home", StandardCharsets.UTF_8);
         // Don't add /api prefix if context path already includes it
         String authPath = request.getContextPath().endsWith("/api") ? "/auth/login" : "/api/auth/login";
         return request.getContextPath() + authPath + "?returnTo=" + returnTo;
