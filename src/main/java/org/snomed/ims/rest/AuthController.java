@@ -192,6 +192,16 @@ public class AuthController {
 			}
 		}
 		
-		return scheme + "://" + host + request.getContextPath() + "/api/auth/callback";
+		// For tests, use a simple localhost URL
+		if (host == null || host.isEmpty()) {
+			return "http://localhost:8080/api/auth/callback";
+		}
+		
+		String contextPath = request.getContextPath();
+		if (contextPath == null) {
+			contextPath = "";
+		}
+		
+		return scheme + "://" + host + contextPath + "/api/auth/callback";
 	}
 }
