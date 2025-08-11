@@ -9,6 +9,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.ims.config.ApplicationProperties;
+import org.snomed.ims.domain.AuthenticationResponse;
 import org.snomed.ims.domain.User;
 import org.snomed.ims.service.IdentityProvider;
 import org.springframework.http.HttpHeaders;
@@ -21,6 +22,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @RestController
 @Tag(name = "AccountController")
@@ -79,29 +82,31 @@ public class AccountController {
 	 */
     @GetMapping(value = "/account", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<User> getAccount(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<AuthenticationResponse> getAccount(HttpServletRequest request, HttpServletResponse response) {
 		Cookie[] cookies = request.getCookies();
 		if (cookies != null) {
 			for (Cookie cookie : cookies) {
 				if (isCookieValid(cookie)) {
 					User user = identityProvider.getUserByToken(cookie.getValue());
                     if (user == null) {
-                        LOGGER.error("60037224-9b55-4f37-b944-eb4c1abc8fd9 Failed to get user; invalidating cookie and initiating passive OIDC check");
+                        LOGGER.error("60037224-9b55-4f37-b944-eb4c1abc8fd9 Failed to get user; invalidating cookie");
 
                         cookie.setMaxAge(0);
                         cookie.setValue("");
                         cookie.setPath("/");
                         response.addCookie(cookie);
 
-                        String authUrl = identityProvider.buildAuthorizationUrl(buildRedirectUri(request), true);
-                        return authUrl == null ? new ResponseEntity<>(HttpStatus.FORBIDDEN) : ResponseEntity.status(HttpStatus.FOUND).location(URI.create(authUrl)).build();
+                        // Return 401 with login URL instead of 302 redirect
+                        String loginUrl = buildLoginUrl(request);
+                        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                .body(AuthenticationResponse.unauthenticated(loginUrl));
                     }
 
 					response.setHeader("Content-Type", "application/json;charset=UTF-8");
 					response.setHeader(AUTH_HEADER_USERNAME, user.getLogin());
 					response.setHeader(AUTH_HEADER_PREFIX + "roles", StringUtils.join(user.getRoles(), ","));
 
-					return new ResponseEntity<>(user, HttpStatus.OK);
+					return ResponseEntity.ok(AuthenticationResponse.authenticated(user));
 				}
 			}
 		}
@@ -114,16 +119,15 @@ public class AccountController {
         return cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0;
     }
 
-    private ResponseEntity<User> getAccountForRequestWithoutCookie(HttpServletRequest request, HttpServletResponse response) {
+    private ResponseEntity<AuthenticationResponse> getAccountForRequestWithoutCookie(HttpServletRequest request, HttpServletResponse response) {
         String error = request.getParameter("error");
         String code = request.getParameter("code");
 
-        // If Keycloak indicated login is required, redirect to interactive login (no prompt=none)
+        // If Keycloak indicated login is required, return 401 with login URL
         if ("login_required".equals(error)) {
-            String interactiveAuthUrl = identityProvider.buildAuthorizationUrl(buildRedirectUri(request), false);
-            return interactiveAuthUrl == null ? new ResponseEntity<>(HttpStatus.FORBIDDEN) : ResponseEntity.status(HttpStatus.FOUND)
-                    .header(HttpHeaders.LOCATION, interactiveAuthUrl)
-                    .build();
+            String loginUrl = buildLoginUrl(request);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(AuthenticationResponse.unauthenticated(loginUrl));
         }
 
         // If Keycloak returned an auth code, exchange it for tokens and set IMS cookie
@@ -132,7 +136,9 @@ public class AccountController {
                 String redirectUri = buildRedirectUri(request);
                 String accessToken = identityProvider.exchangeCodeForAccessToken(code, redirectUri);
                 if (accessToken == null || accessToken.isEmpty()) {
-                    return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+                    String loginUrl = buildLoginUrl(request);
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                            .body(AuthenticationResponse.unauthenticated(loginUrl));
                 }
 
                 // set IMS cookie
@@ -147,23 +153,56 @@ public class AccountController {
 
                 User user = identityProvider.getUserByToken(accessToken);
                 if (user == null) {
-                    return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+                    String loginUrl = buildLoginUrl(request);
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                            .body(AuthenticationResponse.unauthenticated(loginUrl));
                 }
                 response.setHeader("Content-Type", "application/json;charset=UTF-8");
                 response.setHeader(AUTH_HEADER_USERNAME, user.getLogin());
                 response.setHeader(AUTH_HEADER_PREFIX + "roles", StringUtils.join(user.getRoles(), ","));
-                return new ResponseEntity<>(user, HttpStatus.OK);
+                return ResponseEntity.ok(AuthenticationResponse.authenticated(user));
             } catch (Exception e) {
                 LOGGER.error("ea9b3b98-8f47-4d8c-9b93-9b7a23b6d2f3 Failed to exchange code for token", e);
-                return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+                String loginUrl = buildLoginUrl(request);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(AuthenticationResponse.unauthenticated(loginUrl));
             }
         }
 
-        // Initiate passive check with prompt=none to avoid login prompt
-        String authUrl = identityProvider.buildAuthorizationUrl(buildRedirectUri(request), true);
-        return authUrl == null ? new ResponseEntity<>(HttpStatus.FORBIDDEN) : ResponseEntity.status(HttpStatus.FOUND)
-                .location(URI.create(authUrl))
-                .build();
+        // No valid session, return 401 with login URL instead of 302 redirect
+        String loginUrl = buildLoginUrl(request);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(AuthenticationResponse.unauthenticated(loginUrl));
+    }
+
+    private String buildLoginUrl(HttpServletRequest request) {
+        String currentUrl = buildCurrentUrl(request);
+        String returnTo = URLEncoder.encode(currentUrl, StandardCharsets.UTF_8);
+        return request.getContextPath() + "/api/auth/login?returnTo=" + returnTo;
+    }
+
+    private String buildCurrentUrl(HttpServletRequest request) {
+        // Build absolute URL to current endpoint (without query params)
+        String scheme = request.getHeader("X-Forwarded-Proto");
+        if (scheme == null || scheme.isEmpty()) {
+            scheme = request.getScheme();
+        }
+        String host = request.getHeader("X-Forwarded-Host");
+        if (host == null || host.isEmpty()) {
+            host = request.getHeader("Host");
+        }
+        // Fallbacks when Host headers are missing (e.g., during tests)
+        if (host == null || host.isEmpty()) {
+            host = request.getServerName();
+            int port = request.getServerPort();
+            boolean isDefaultPort = ("http".equalsIgnoreCase(scheme) && port == 80)
+                    || ("https".equalsIgnoreCase(scheme) && port == 443);
+            if (!isDefaultPort && port > 0) {
+                host = host + ":" + port;
+            }
+        }
+        String requestUri = request.getRequestURI();
+        return scheme + "://" + host + requestUri;
     }
 
     private String buildRedirectUri(HttpServletRequest request) {

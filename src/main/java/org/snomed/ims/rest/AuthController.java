@@ -14,6 +14,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 @RestController
 @Tag(name = "AuthController")
 public class AuthController {
@@ -69,5 +73,125 @@ public class AuthController {
 		response.addCookie(cookie);
 
 		return new ResponseEntity<>(HttpStatus.OK);
+	}
+
+	/**
+	 * Initiate OAuth login flow - redirects to Keycloak
+	 */
+	@GetMapping("/auth/login")
+	public ResponseEntity<Void> login(@RequestParam(value = "returnTo", defaultValue = "/") String returnTo, 
+	                                  HttpServletRequest request) {
+		LOGGER.debug("REST request to initiate OAuth login flow");
+		
+		String redirectUri = buildCallbackUrl(request);
+		String authUrl = identityProvider.buildAuthorizationUrl(redirectUri, false);
+		
+		if (authUrl == null) {
+			return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		
+		// Add returnTo to state parameter for callback
+		String state = URLEncoder.encode(returnTo, StandardCharsets.UTF_8);
+		authUrl += "&state=" + state;
+		
+		return ResponseEntity.status(HttpStatus.FOUND)
+				.location(URI.create(authUrl))
+				.build();
+	}
+
+	/**
+	 * Handle OAuth callback from Keycloak
+	 */
+	@GetMapping("/auth/callback")
+	public ResponseEntity<Void> callback(@RequestParam String code,
+	                                    @RequestParam String state,
+	                                    HttpServletRequest request,
+	                                    HttpServletResponse response) {
+		LOGGER.debug("REST request to handle OAuth callback");
+		
+		try {
+			String redirectUri = buildCallbackUrl(request);
+			String accessToken = identityProvider.exchangeCodeForAccessToken(code, redirectUri);
+			
+			if (accessToken == null || accessToken.isEmpty()) {
+				LOGGER.error("Failed to exchange code for access token");
+				return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+			}
+			
+			// Set IMS session cookie
+			Cookie imsCookie = new Cookie(cookieName, accessToken);
+			if (cookieMaxAge != null) {
+				imsCookie.setMaxAge(cookieMaxAge);
+			}
+			imsCookie.setDomain(cookieDomain);
+			imsCookie.setSecure(cookieSecureFlag);
+			imsCookie.setPath("/");
+			imsCookie.setHttpOnly(true);
+			imsCookie.setAttribute("SameSite", "Lax");
+			response.addCookie(imsCookie);
+			
+			// Extract returnTo from state parameter
+			String returnTo = "/";
+			if (state != null && !state.isEmpty()) {
+				returnTo = state;
+			}
+			
+			// Redirect back to the SPA
+			return ResponseEntity.status(HttpStatus.FOUND)
+					.location(URI.create(returnTo))
+					.build();
+					
+		} catch (Exception e) {
+			LOGGER.error("Failed to handle OAuth callback", e);
+			return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
+	/**
+	 * Silent SSO auto-login (no page shown to user)
+	 */
+	@GetMapping("/auth/auto")
+	public ResponseEntity<Void> autoLogin(@RequestParam(value = "returnTo", defaultValue = "/") String returnTo,
+	                                     HttpServletRequest request) {
+		LOGGER.debug("REST request to initiate silent SSO auto-login");
+		
+		String redirectUri = buildCallbackUrl(request);
+		String authUrl = identityProvider.buildAuthorizationUrl(redirectUri, true);
+		
+		if (authUrl == null) {
+			return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		
+		// Add returnTo to state parameter for callback
+		String state = URLEncoder.encode(returnTo, StandardCharsets.UTF_8);
+		authUrl += "&state=" + state;
+		
+		return ResponseEntity.status(HttpStatus.FOUND)
+				.location(URI.create(authUrl))
+				.build();
+	}
+
+	private String buildCallbackUrl(HttpServletRequest request) {
+		// Build absolute URL to the callback endpoint
+		String scheme = request.getHeader("X-Forwarded-Proto");
+		if (scheme == null || scheme.isEmpty()) {
+			scheme = request.getScheme();
+		}
+		String host = request.getHeader("X-Forwarded-Host");
+		if (host == null || host.isEmpty()) {
+			host = request.getHeader("Host");
+		}
+		// Fallbacks when Host headers are missing (e.g., during tests)
+		if (host == null || host.isEmpty()) {
+			host = request.getServerName();
+			int port = request.getServerPort();
+			boolean isDefaultPort = ("http".equalsIgnoreCase(scheme) && port == 80)
+					|| ("https".equalsIgnoreCase(scheme) && port == 443);
+			if (!isDefaultPort && port > 0) {
+				host = host + ":" + port;
+			}
+		}
+		
+		return scheme + "://" + host + request.getContextPath() + "/api/auth/callback";
 	}
 }

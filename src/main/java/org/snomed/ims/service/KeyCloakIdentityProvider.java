@@ -334,7 +334,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(form, headers);
 
         ResponseEntity<Map<String, Object>> tokenResponse = restTemplate.exchange(
-                "/realms/" + this.keycloakRealms + "/protocol/openid-connect/token",
+                keycloakUrl + "/realms/" + this.keycloakRealms + "/protocol/openid-connect/token",
                 HttpMethod.POST,
                 requestEntity,
                 new org.springframework.core.ParameterizedTypeReference<>() {}
