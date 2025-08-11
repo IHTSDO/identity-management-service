@@ -3,10 +3,8 @@ package org.snomed.ims.rest;
 
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
-import org.snomed.ims.domain.crowd.Session;
 import org.snomed.ims.domain.User;
 import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.web.client.RestClientException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -70,9 +68,7 @@ class AccountControllerTest extends IntegrationTest {
 		User user = new User();
 		user.setLogin("test-login");
 
-		Session session = new Session();
-		session.setUser(user);
-		givenGetUserByTokenReturnsExpected(session);
+		givenGetUserByTokenReturnsExpected(user);
 
 		// when
 		ResultActions resultActions = get(GET_ACCOUNT, cookie);
@@ -118,8 +114,7 @@ class AccountControllerTest extends IntegrationTest {
 		when(identityProvider.getUserByToken(anyString())).thenThrow(RuntimeException.class);
 	}
 
-	private void givenGetUserByTokenReturnsExpected(Session session) {
-		User user = session.getUser();
+	private void givenGetUserByTokenReturnsExpected(User user) {
 		when(identityProvider.getUserByToken(anyString())).thenReturn(user);
 	}
 }
