@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
@@ -130,15 +131,45 @@ public class AuthController {
 			imsCookie.setAttribute("SameSite", "Lax");
 			response.addCookie(imsCookie);
 			
-			// Extract returnTo from state parameter
-			String returnTo = "/";
+			// Extract returnTo from state parameter and decode it
+			String returnTo = "/#/home"; // Default to frontend home
 			if (state != null && !state.isEmpty()) {
-				returnTo = state;
+				try {
+					returnTo = URLDecoder.decode(state, StandardCharsets.UTF_8);
+				} catch (Exception e) {
+					LOGGER.warn("Failed to decode state parameter, using default returnTo", e);
+					returnTo = "/#/home";
+				}
 			}
+			
+			// Build absolute URL for redirect back to the SPA
+			String scheme = request.getHeader("X-Forwarded-Proto");
+			if (scheme == null || scheme.isEmpty()) {
+				scheme = request.getScheme();
+			}
+			String host = request.getHeader("X-Forwarded-Host");
+			if (host == null || host.isEmpty()) {
+				host = request.getHeader("Host");
+			}
+			if (host == null || host.isEmpty()) {
+				host = request.getServerName();
+			}
+			
+			String contextPath = request.getContextPath();
+			if (contextPath == null) {
+				contextPath = "";
+			}
+			
+			// Remove /api prefix from context path for frontend redirect
+			if (contextPath.endsWith("/api")) {
+				contextPath = contextPath.substring(0, contextPath.length() - 4);
+			}
+			
+			String redirectUrl = scheme + "://" + host + contextPath + returnTo;
 			
 			// Redirect back to the SPA
 			return ResponseEntity.status(HttpStatus.FOUND)
-					.location(URI.create(returnTo))
+					.location(URI.create(redirectUrl))
 					.build();
 					
 		} catch (Exception e) {

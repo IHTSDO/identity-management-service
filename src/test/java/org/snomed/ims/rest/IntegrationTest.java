@@ -14,8 +14,6 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.client.RestTemplate;
-
 import java.util.Collection;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -25,8 +23,6 @@ import static org.mockito.Mockito.mock;
 @ContextConfiguration
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class IntegrationTest {
-	protected RestTemplate restTemplate = mock(RestTemplate.class);
-
 	protected IdentityProvider identityProvider = mock(IdentityProvider.class);
 
 	@Autowired
