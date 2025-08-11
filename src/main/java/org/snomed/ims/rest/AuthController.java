@@ -194,7 +194,7 @@ public class AuthController {
 		
 		// For tests, use a simple localhost URL
 		if (host == null || host.isEmpty()) {
-			return "http://localhost:8080/api/auth/callback";
+			return "http://localhost:8080/auth/callback";
 		}
 		
 		String contextPath = request.getContextPath();
@@ -202,6 +202,8 @@ public class AuthController {
 			contextPath = "";
 		}
 		
-		return scheme + "://" + host + contextPath + "/api/auth/callback";
+		// Don't add /api prefix if context path already includes it
+		String callbackPath = contextPath.endsWith("/api") ? "/auth/callback" : "/api/auth/callback";
+		return scheme + "://" + host + contextPath + callbackPath;
 	}
 }
