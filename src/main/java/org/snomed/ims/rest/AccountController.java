@@ -87,26 +87,40 @@ public class AccountController {
 		if (cookies != null) {
 			for (Cookie cookie : cookies) {
 				if (isCookieValid(cookie)) {
-					User user = identityProvider.getUserByToken(cookie.getValue());
-                    if (user == null) {
-                        LOGGER.error("60037224-9b55-4f37-b944-eb4c1abc8fd9 Failed to get user; invalidating cookie");
+					try {
+						User user = identityProvider.getUserByToken(cookie.getValue());
+						if (user == null) {
+							LOGGER.error("60037224-9b55-4f37-b944-eb4c1abc8fd9 Failed to get user; invalidating cookie");
 
-                        cookie.setMaxAge(0);
-                        cookie.setValue("");
-                        cookie.setPath("/");
-                        response.addCookie(cookie);
+							cookie.setMaxAge(0);
+							cookie.setValue("");
+							cookie.setPath("/");
+							response.addCookie(cookie);
 
-                        // Return 401 with login URL instead of 302 redirect
-                        String loginUrl = buildLoginUrl(request);
-                        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                                .body(AuthenticationResponse.unauthenticated(loginUrl));
-                    }
+							// Return 401 with login URL instead of 302 redirect
+							String loginUrl = buildLoginUrl(request);
+							return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+									.body(AuthenticationResponse.unauthenticated(loginUrl));
+						}
 
-					response.setHeader("Content-Type", "application/json;charset=UTF-8");
-					response.setHeader(AUTH_HEADER_USERNAME, user.getLogin());
-					response.setHeader(AUTH_HEADER_PREFIX + "roles", StringUtils.join(user.getRoles(), ","));
+						response.setHeader("Content-Type", "application/json;charset=UTF-8");
+						response.setHeader(AUTH_HEADER_USERNAME, user.getLogin());
+						response.setHeader(AUTH_HEADER_PREFIX + "roles", StringUtils.join(user.getRoles(), ","));
 
-					return ResponseEntity.ok(AuthenticationResponse.authenticated(user));
+						return ResponseEntity.ok(AuthenticationResponse.authenticated(user));
+					} catch (Exception e) {
+						LOGGER.error("Failed to get user by token; invalidating cookie", e);
+						
+						cookie.setMaxAge(0);
+						cookie.setValue("");
+						cookie.setPath("/");
+						response.addCookie(cookie);
+
+						// Return 401 with login URL when exception occurs
+						String loginUrl = buildLoginUrl(request);
+						return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+								.body(AuthenticationResponse.unauthenticated(loginUrl));
+					}
 				}
 			}
 		}
