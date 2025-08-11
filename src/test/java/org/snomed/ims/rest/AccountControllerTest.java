@@ -9,6 +9,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.web.client.RestClientException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
@@ -21,9 +22,12 @@ class AccountControllerTest extends IntegrationTest {
 		// when
 		ResultActions resultActions = get(GET_ACCOUNT);
 		int status = getStatus(resultActions);
+		String body = getBody(resultActions);
 
 		// then
-		assertEquals(403, status);
+		assertEquals(401, status);
+		assertTrue(body.contains("\"authenticated\":false"));
+		assertTrue(body.contains("\"loginUrl\""));
 	}
 
 	@Test
@@ -34,9 +38,12 @@ class AccountControllerTest extends IntegrationTest {
 		// when
 		ResultActions resultActions = get(GET_ACCOUNT, cookie);
 		int status = getStatus(resultActions);
+		String body = getBody(resultActions);
 
 		// then
-		assertEquals(403, status);
+		assertEquals(401, status);
+		assertTrue(body.contains("\"authenticated\":false"));
+		assertTrue(body.contains("\"loginUrl\""));
 	}
 
 	@Test
@@ -48,9 +55,12 @@ class AccountControllerTest extends IntegrationTest {
 		// when
 		ResultActions resultActions = get(GET_ACCOUNT, cookie);
 		int status = getStatus(resultActions);
+		String body = getBody(resultActions);
 
 		// then
-		assertEquals(403, status);
+		assertEquals(401, status);
+		assertTrue(body.contains("\"authenticated\":false"));
+		assertTrue(body.contains("\"loginUrl\""));
 	}
 
 	@Test
@@ -72,7 +82,8 @@ class AccountControllerTest extends IntegrationTest {
 
 		// then
 		assertEquals(200, status);
-		assertEquals("{\"login\":\"test-login\",\"active\":false,\"username\":\"test-login\"}", body);
+		assertTrue(body.contains("\"authenticated\":true"));
+		assertTrue(body.contains("\"test-login\""));
 		assertEquals("test-login", responseHeader);
 	}
 
@@ -104,10 +115,11 @@ class AccountControllerTest extends IntegrationTest {
 	}
 
 	private void givenGetUserByTokenThrowsException() {
-		when(restTemplate.getForObject(anyString(), eq(Session.class), anyMap())).thenThrow(RestClientException.class);
+		when(identityProvider.getUserByToken(anyString())).thenThrow(RuntimeException.class);
 	}
 
 	private void givenGetUserByTokenReturnsExpected(Session session) {
-		when(restTemplate.getForObject(anyString(), eq(Session.class), anyMap())).thenReturn(session);
+		User user = session.getUser();
+		when(identityProvider.getUserByToken(anyString())).thenReturn(user);
 	}
 }

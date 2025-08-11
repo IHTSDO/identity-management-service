@@ -4,7 +4,7 @@ import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.snomed.ims.config.ApplicationProperties;
-import org.snomed.ims.service.CrowdRestClient;
+import org.snomed.ims.service.IdentityProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -27,7 +27,7 @@ import static org.mockito.Mockito.mock;
 class IntegrationTest {
 	protected RestTemplate restTemplate = mock(RestTemplate.class);
 
-	protected CrowdRestClient crowdRestClient = new CrowdRestClient(restTemplate);
+	protected IdentityProvider identityProvider = mock(IdentityProvider.class);
 
 	@Autowired
 	protected ApplicationProperties applicationProperties;
@@ -36,8 +36,8 @@ class IntegrationTest {
 
 	@BeforeEach
 	void setUp() {
-		AccountController accountController = new AccountController(crowdRestClient, applicationProperties);
-		AuthController authController = new AuthController(crowdRestClient, applicationProperties);
+		AccountController accountController = new AccountController(identityProvider, applicationProperties);
+		AuthController authController = new AuthController(identityProvider, applicationProperties);
 		VersionController versionController = new VersionController(applicationProperties);
 
 		this.mockMvc = MockMvcBuilders
