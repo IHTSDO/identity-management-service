@@ -40,7 +40,7 @@ public class IdentityProviderFactory {
         return switch (providerType) {
             case CROWD -> new CrowdRestClient(crowdRestTemplate);
             case FILE -> new PropertyFileIdentityProvider(fileDirectory);
-            case KEYCLOAK -> new KeyCloakIdentityProvider(keyCloakRestTemplate, applicationProperties.getKeycloakRealms(), applicationProperties.getKeycloakClientId(), applicationProperties.getKeycloakClientSecrete(), applicationProperties.getKeycloakAdminUsername(), applicationProperties.getKeycloakAdminPassword());
+            case KEYCLOAK -> new KeyCloakIdentityProvider(keyCloakRestTemplate, applicationProperties.getKeycloakUrl(), applicationProperties.getKeycloakRealms(), applicationProperties.getKeycloakClientId(), applicationProperties.getKeycloakClientSecrete(), applicationProperties.getKeycloakAdminUsername(), applicationProperties.getKeycloakAdminPassword());
         };
     }
 

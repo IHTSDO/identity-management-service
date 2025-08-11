@@ -1,5 +1,6 @@
 package org.snomed.ims.service;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.ims.domain.User;
@@ -16,6 +17,8 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -30,6 +33,8 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
 
     private final RestTemplate restTemplate;
 
+    private final String keycloakUrl;
+
     private final String keycloakRealms;
 
     private final String keycloakClientId;
@@ -40,8 +45,9 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
 
     private final String keycloakAdminPassword;
 
-    public KeyCloakIdentityProvider(RestTemplate restTemplate, String keycloakRealms, String keycloakClientId, String keycloakClientSecrete, String keycloakAdminUsername, String keycloakAdminPassword) {
+    public KeyCloakIdentityProvider(RestTemplate restTemplate, String keycloakUrl, String keycloakRealms, String keycloakClientId, String keycloakClientSecrete, String keycloakAdminUsername, String keycloakAdminPassword) {
         this.restTemplate = restTemplate;
+        this.keycloakUrl = keycloakUrl;
         this.keycloakRealms = keycloakRealms;
         this.keycloakClientId = keycloakClientId;
         this.keycloakClientSecrete = keycloakClientSecrete;
@@ -293,6 +299,50 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
     @Override
     public void resetUserPassword(User user, String newPassword) {
         throw new UnsupportedOperationException("Password reset is not supported via API.");
+    }
+
+    @Override
+    public String buildAuthorizationUrl(String redirectUri, boolean promptNone) {
+        StringBuilder url = new StringBuilder();
+        url.append(keycloakUrl)
+                .append("/realms/")
+                .append(keycloakRealms)
+                .append("/protocol/openid-connect/auth")
+                .append("?client_id=").append(URLEncoder.encode(keycloakClientId, StandardCharsets.UTF_8))
+                .append("&redirect_uri=").append(URLEncoder.encode(redirectUri, StandardCharsets.UTF_8))
+                .append("&response_type=code")
+                .append("&scope=").append(URLEncoder.encode("openid profile email", StandardCharsets.UTF_8));
+        if (promptNone) {
+            url.append("&prompt=none");
+        }
+        return url.toString();
+    }
+
+
+
+    @Override
+    public String exchangeCodeForAccessToken(String code, String redirectUri) {
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("grant_type", "authorization_code");
+        form.add("code", code);
+        form.add("redirect_uri", redirectUri);
+        form.add(CLIENT_ID, keycloakClientId);
+        form.add(CLIENT_SECRET, keycloakClientSecrete);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(form, headers);
+
+        ResponseEntity<Map<String, Object>> tokenResponse = restTemplate.exchange(
+                "/realms/" + this.keycloakRealms + "/protocol/openid-connect/token",
+                HttpMethod.POST,
+                requestEntity,
+                new org.springframework.core.ParameterizedTypeReference<>() {}
+        );
+        Map<String, Object> body = tokenResponse.getBody();
+        if (body == null) return null;
+        Object accessToken = body.get("access_token");
+        return accessToken == null ? null : accessToken.toString();
     }
 
     private String getAdminToken() {

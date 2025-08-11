@@ -1,3 +1,4 @@
+
 package org.snomed.ims.rest;
 
 import jakarta.servlet.http.Cookie;
@@ -8,7 +9,6 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.web.client.RestClientException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
@@ -20,12 +20,10 @@ class AccountControllerTest extends IntegrationTest {
 	void getAccount_ShouldReturnExpected_WhenNoCookie() {
 		// when
 		ResultActions resultActions = get(GET_ACCOUNT);
-        int status = getStatus(resultActions);
-        String location = getResponseHeader(resultActions, "Location");
+		int status = getStatus(resultActions);
 
 		// then
-        assertEquals(302, status);
-        assertTrue(location != null && location.contains("/protocol/openid-connect/auth") && location.contains("prompt=none"));
+		assertEquals(403, status);
 	}
 
 	@Test
@@ -36,11 +34,9 @@ class AccountControllerTest extends IntegrationTest {
 		// when
 		ResultActions resultActions = get(GET_ACCOUNT, cookie);
 		int status = getStatus(resultActions);
-        String location = getResponseHeader(resultActions, "Location");
 
 		// then
-        assertEquals(302, status);
-        assertTrue(location != null && location.contains("/protocol/openid-connect/auth") && location.contains("prompt=none"));
+		assertEquals(403, status);
 	}
 
 	@Test
@@ -51,12 +47,10 @@ class AccountControllerTest extends IntegrationTest {
 
 		// when
 		ResultActions resultActions = get(GET_ACCOUNT, cookie);
-        int status = getStatus(resultActions);
-        String location = getResponseHeader(resultActions, "Location");
+		int status = getStatus(resultActions);
 
 		// then
-        assertEquals(302, status);
-        assertTrue(location != null && location.contains("/protocol/openid-connect/auth") && location.contains("prompt=none"));
+		assertEquals(403, status);
 	}
 
 	@Test

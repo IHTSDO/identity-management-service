@@ -5,30 +5,22 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.ims.config.ApplicationProperties;
 import org.snomed.ims.domain.User;
 import org.snomed.ims.service.IdentityProvider;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
 
 @RestController
 @Tag(name = "AccountController")
@@ -44,14 +36,6 @@ public class AccountController {
     private final String cookieDomain;
     private final boolean cookieSecureFlag;
 
-    private final String keycloakUrl;
-    private final String keycloakRealm;
-    private final String keycloakClientId;
-    private final String keycloakClientSecret;
-
-    @Autowired
-    @Qualifier("keycloak")
-    private RestTemplate keycloakRestTemplate;
 
     public AccountController(IdentityProvider identityProvider, ApplicationProperties applicationProperties) {
         this.identityProvider = identityProvider;
@@ -59,10 +43,6 @@ public class AccountController {
         this.cookieMaxAge = applicationProperties.getCookieMaxAgeInt();
         this.cookieDomain = applicationProperties.getCookieDomain();
         this.cookieSecureFlag = applicationProperties.isCookieSecure();
-        this.keycloakUrl = applicationProperties.getKeycloakUrl();
-        this.keycloakRealm = applicationProperties.getKeycloakRealms();
-        this.keycloakClientId = applicationProperties.getKeycloakClientId();
-        this.keycloakClientSecret = applicationProperties.getKeycloakClientSecrete();
     }
 
 	/**
@@ -79,7 +59,7 @@ public class AccountController {
 		Cookie[] cookies = request.getCookies();
 		if (cookies != null) {
 			for (Cookie cookie : cookies) {
-				if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
+				if (isCookieValid(cookie)) {
 					if (StringUtils.isNotEmpty(cookie.getValue())) {
 						identityProvider.invalidateToken(cookie.getValue());
 					}
@@ -103,7 +83,7 @@ public class AccountController {
 		Cookie[] cookies = request.getCookies();
 		if (cookies != null) {
 			for (Cookie cookie : cookies) {
-				if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
+				if (isCookieValid(cookie)) {
 					User user = identityProvider.getUserByToken(cookie.getValue());
                     if (user == null) {
                         LOGGER.error("60037224-9b55-4f37-b944-eb4c1abc8fd9 Failed to get user; invalidating cookie and initiating passive OIDC check");
@@ -113,10 +93,8 @@ public class AccountController {
                         cookie.setPath("/");
                         response.addCookie(cookie);
 
-                        String authUrl = buildAuthorizationUrl(buildRedirectUri(request), true);
-                        return ResponseEntity.status(HttpStatus.FOUND)
-                                .location(URI.create(authUrl))
-                                .build();
+                        String authUrl = identityProvider.buildAuthorizationUrl(buildRedirectUri(request), true);
+                        return authUrl == null ? new ResponseEntity<>(HttpStatus.FORBIDDEN) : ResponseEntity.status(HttpStatus.FOUND).location(URI.create(authUrl)).build();
                     }
 
 					response.setHeader("Content-Type", "application/json;charset=UTF-8");
@@ -129,13 +107,21 @@ public class AccountController {
 		}
 
         // No IMS cookie. Handle OIDC passive check via prompt=none
+        return getAccountForRequestWithoutCookie(request, response);
+    }
+
+    private boolean isCookieValid(Cookie cookie) {
+        return cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0;
+    }
+
+    private ResponseEntity<User> getAccountForRequestWithoutCookie(HttpServletRequest request, HttpServletResponse response) {
         String error = request.getParameter("error");
         String code = request.getParameter("code");
 
         // If Keycloak indicated login is required, redirect to interactive login (no prompt=none)
         if ("login_required".equals(error)) {
-            String interactiveAuthUrl = buildAuthorizationUrl(buildRedirectUri(request), false);
-            return ResponseEntity.status(HttpStatus.FOUND)
+            String interactiveAuthUrl = identityProvider.buildAuthorizationUrl(buildRedirectUri(request), false);
+            return interactiveAuthUrl == null ? new ResponseEntity<>(HttpStatus.FORBIDDEN) : ResponseEntity.status(HttpStatus.FOUND)
                     .header(HttpHeaders.LOCATION, interactiveAuthUrl)
                     .build();
         }
@@ -144,7 +130,7 @@ public class AccountController {
         if (code != null && !code.isEmpty()) {
             try {
                 String redirectUri = buildRedirectUri(request);
-                String accessToken = exchangeCodeForAccessToken(code, redirectUri);
+                String accessToken = identityProvider.exchangeCodeForAccessToken(code, redirectUri);
                 if (accessToken == null || accessToken.isEmpty()) {
                     return new ResponseEntity<>(HttpStatus.FORBIDDEN);
                 }
@@ -174,26 +160,10 @@ public class AccountController {
         }
 
         // Initiate passive check with prompt=none to avoid login prompt
-        String authUrl = buildAuthorizationUrl(buildRedirectUri(request), true);
-        return ResponseEntity.status(HttpStatus.FOUND)
+        String authUrl = identityProvider.buildAuthorizationUrl(buildRedirectUri(request), true);
+        return authUrl == null ? new ResponseEntity<>(HttpStatus.FORBIDDEN) : ResponseEntity.status(HttpStatus.FOUND)
                 .location(URI.create(authUrl))
                 .build();
-	}
-
-    private String buildAuthorizationUrl(String redirectUri, boolean promptNone) {
-        StringBuilder url = new StringBuilder();
-        url.append(keycloakUrl)
-                .append("/realms/")
-                .append(keycloakRealm)
-                .append("/protocol/openid-connect/auth")
-                .append("?client_id=").append(URLEncoder.encode(keycloakClientId, StandardCharsets.UTF_8))
-                .append("&redirect_uri=").append(URLEncoder.encode(redirectUri, StandardCharsets.UTF_8))
-                .append("&response_type=code")
-                .append("&scope=").append(URLEncoder.encode("openid profile email", StandardCharsets.UTF_8));
-        if (promptNone) {
-            url.append("&prompt=none");
-        }
-        return url.toString();
     }
 
     private String buildRedirectUri(HttpServletRequest request) {
@@ -217,32 +187,7 @@ public class AccountController {
             }
         }
         String requestUri = request.getRequestURI();
-        StringBuilder redirect = new StringBuilder();
-        redirect.append(scheme).append("://").append(host).append(requestUri);
-        return redirect.toString();
+        return scheme + "://" + host + requestUri;
     }
 
-    private String exchangeCodeForAccessToken(String code, String redirectUri) {
-        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
-        form.add("grant_type", "authorization_code");
-        form.add("code", code);
-        form.add("redirect_uri", redirectUri);
-        form.add("client_id", keycloakClientId);
-        form.add("client_secret", keycloakClientSecret);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-        HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(form, headers);
-
-        ResponseEntity<Map<String, Object>> tokenResponse = keycloakRestTemplate.exchange(
-                "/realms/" + keycloakRealm + "/protocol/openid-connect/token",
-                HttpMethod.POST,
-                requestEntity,
-                new org.springframework.core.ParameterizedTypeReference<>() {}
-        );
-        Map<String, Object> body = tokenResponse.getBody();
-        if (body == null) return null;
-        Object accessToken = body.get("access_token");
-        return accessToken == null ? null : accessToken.toString();
-    }
 }
