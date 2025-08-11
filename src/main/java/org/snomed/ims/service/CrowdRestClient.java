@@ -209,4 +209,14 @@ public class CrowdRestClient implements IdentityProvider {
 		body.put("value", newPassword);
 		restTemplate.put("/user/password?username={username}", body, params);
 	}
+
+	@Override
+	public String buildAuthorizationUrl(String redirectUri, boolean promptNone) {
+		return null;
+	}
+
+	@Override
+	public String exchangeCodeForAccessToken(String code, String redirectUri) {
+		return null;
+	}
 }

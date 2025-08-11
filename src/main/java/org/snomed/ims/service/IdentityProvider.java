@@ -70,4 +70,8 @@ public interface IdentityProvider {
 	User updateUser(User user, UserInformationUpdateRequest request, String token);
 
 	void resetUserPassword(User user, String newPassword);
+
+	String buildAuthorizationUrl(String redirectUri, boolean promptNone);
+
+	String exchangeCodeForAccessToken(String code, String redirectUri);
 }

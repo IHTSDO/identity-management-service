@@ -124,6 +124,16 @@ public class PropertyFileIdentityProvider implements IdentityProvider {
 		throw new UnsupportedOperationException("Password reset is not supported via API.");
 	}
 
+	@Override
+	public String buildAuthorizationUrl(String redirectUri, boolean promptNone) {
+		return null;
+	}
+
+	@Override
+	public String exchangeCodeForAccessToken(String code, String redirectUri) {
+		return null;
+	}
+
 	public void readFilesIfChanged() {
 		try {
 			if (usersFileSource.hasChanged() || userGroupFileSource.hasChanged()) {
