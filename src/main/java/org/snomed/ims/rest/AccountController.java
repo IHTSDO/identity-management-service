@@ -192,7 +192,9 @@ public class AccountController {
     private String buildLoginUrl(HttpServletRequest request) {
         String currentUrl = buildCurrentUrl(request);
         String returnTo = URLEncoder.encode(currentUrl, StandardCharsets.UTF_8);
-        return request.getContextPath() + "/api/auth/login?returnTo=" + returnTo;
+        // Don't add /api prefix if context path already includes it
+        String authPath = request.getContextPath().endsWith("/api") ? "/auth/login" : "/api/auth/login";
+        return request.getContextPath() + authPath + "?returnTo=" + returnTo;
     }
 
     private String buildCurrentUrl(HttpServletRequest request) {
