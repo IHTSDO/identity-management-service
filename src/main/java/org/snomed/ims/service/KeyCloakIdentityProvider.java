@@ -372,6 +372,13 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
 
     @Override
     public String buildAuthorizationUrl(String redirectUri, boolean promptNone) {
+        LOGGER.debug("Building authorization URL");
+        LOGGER.debug("  - Redirect URI: {}", redirectUri);
+        LOGGER.debug("  - Prompt None: {}", promptNone);
+        LOGGER.debug("  - Client ID: {}", keycloakClientId);
+        LOGGER.debug("  - Keycloak URL: {}", keycloakUrl);
+        LOGGER.debug("  - Realm: {}", keycloakRealms);
+        
         StringBuilder url = new StringBuilder();
         url.append(keycloakUrl)
                 .append("/realms/")
@@ -384,13 +391,23 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         if (promptNone) {
             url.append("&prompt=none");
         }
-        return url.toString();
+        
+        String finalUrl = url.toString();
+        LOGGER.debug("Built authorization URL: {}", finalUrl);
+        return finalUrl;
     }
 
 
 
     @Override
     public String exchangeCodeForAccessToken(String code, String redirectUri) {
+        LOGGER.debug("Exchanging authorization code for access token");
+        LOGGER.debug("  - Code: {}...{}", code.substring(0, Math.min(8, code.length())), 
+            code.substring(Math.max(0, code.length() - 8)));
+        LOGGER.debug("  - Redirect URI: {}", redirectUri);
+        LOGGER.debug("  - Client ID: {}", keycloakClientId);
+        LOGGER.debug("  - Client Secret: {}", keycloakClientSecrete != null ? "***" : "null");
+        
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("grant_type", "authorization_code");
         form.add("code", code);
@@ -402,16 +419,52 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
         HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(form, headers);
 
-        ResponseEntity<Map<String, Object>> tokenResponse = restTemplate.exchange(
-                keycloakUrl + "/realms/" + this.keycloakRealms + "/protocol/openid-connect/token",
-                HttpMethod.POST,
-                requestEntity,
-                new org.springframework.core.ParameterizedTypeReference<>() {}
-        );
-        Map<String, Object> body = tokenResponse.getBody();
-        if (body == null) return null;
-        Object accessToken = body.get("access_token");
-        return accessToken == null ? null : accessToken.toString();
+        // Build the token exchange URL
+        String tokenUrl = keycloakUrl + "/realms/" + this.keycloakRealms + "/protocol/openid-connect/token";
+        LOGGER.debug("Making token exchange request to: {}", tokenUrl);
+        LOGGER.debug("Request headers: {}", headers);
+        LOGGER.debug("Request body parameters:");
+        LOGGER.debug("  - grant_type: authorization_code");
+        LOGGER.debug("  - code: {}...{}", code.substring(0, Math.min(8, code.length())), 
+            code.substring(Math.max(0, code.length() - 8)));
+        LOGGER.debug("  - redirect_uri: {}", redirectUri);
+        LOGGER.debug("  - client_id: {}", keycloakClientId);
+        LOGGER.debug("  - client_secret: {}", keycloakClientSecrete != null ? "***" : "null");
+
+        try {
+            ResponseEntity<Map<String, Object>> tokenResponse = restTemplate.exchange(
+                    tokenUrl,
+                    HttpMethod.POST,
+                    requestEntity,
+                    new org.springframework.core.ParameterizedTypeReference<>() {}
+            );
+            
+            LOGGER.debug("Token exchange response status: {}", tokenResponse.getStatusCode());
+            LOGGER.debug("Token exchange response headers: {}", tokenResponse.getHeaders());
+            
+            Map<String, Object> body = tokenResponse.getBody();
+            if (body == null) {
+                LOGGER.warn("Token exchange response body is null");
+                return null;
+            }
+            
+            LOGGER.debug("Token exchange response body keys: {}", body.keySet());
+            Object accessToken = body.get("access_token");
+            
+            if (accessToken == null) {
+                LOGGER.warn("Token exchange response contains no access_token");
+                LOGGER.debug("Full token exchange response: {}", body);
+                return null;
+            }
+            
+            LOGGER.debug("Token exchange successful, access token length: {}", accessToken.toString().length());
+            return accessToken.toString();
+            
+        } catch (Exception e) {
+            LOGGER.error("Token exchange failed. URL: {}, Client ID: {}, Redirect URI: {}, Error: {}", 
+                tokenUrl, keycloakClientId, redirectUri, e.getMessage(), e);
+            return null;
+        }
     }
 
     private String getAdminToken() {

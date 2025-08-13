@@ -109,15 +109,25 @@ public class AuthController {
 	                                    HttpServletRequest request,
 	                                    HttpServletResponse response) {
 		LOGGER.debug("REST request to handle OAuth callback");
+		LOGGER.debug("Callback parameters:");
+		LOGGER.debug("  - code: {}...{}", code.substring(0, Math.min(8, code.length())), 
+		    code.substring(Math.max(0, code.length() - 8)));
+		LOGGER.debug("  - state: {}", state);
+		LOGGER.debug("  - request URL: {}", request.getRequestURL());
+		LOGGER.debug("  - query string: {}", request.getQueryString());
 		
 		try {
 			String redirectUri = buildCallbackUrl(request);
+			LOGGER.debug("Built callback URL: {}", redirectUri);
+			
 			String accessToken = identityProvider.exchangeCodeForAccessToken(code, redirectUri);
 			
 			if (accessToken == null || accessToken.isEmpty()) {
 				LOGGER.error("Failed to exchange code for access token");
 				return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 			}
+			
+			LOGGER.debug("Successfully obtained access token, length: {}", accessToken.length());
 			
 			// Set IMS session cookie
 			Cookie imsCookie = new Cookie(cookieName, accessToken);
@@ -131,11 +141,15 @@ public class AuthController {
 			imsCookie.setAttribute("SameSite", "Lax");
 			response.addCookie(imsCookie);
 			
+			LOGGER.debug("Set IMS session cookie: name={}, domain={}, secure={}, httpOnly={}", 
+			    cookieName, cookieDomain, cookieSecureFlag, true);
+			
 			// Extract returnTo from state parameter and decode it
 			String returnTo = "/#/home"; // Default to frontend home
 			if (state != null && !state.isEmpty()) {
 				try {
 					returnTo = URLDecoder.decode(state, StandardCharsets.UTF_8);
+					LOGGER.debug("Decoded returnTo from state: {}", returnTo);
 				} catch (Exception e) {
 					LOGGER.warn("Failed to decode state parameter, using default returnTo", e);
 					returnTo = "/#/home";
@@ -166,6 +180,7 @@ public class AuthController {
 			}
 			
 			String redirectUrl = scheme + "://" + host + contextPath + returnTo;
+			LOGGER.debug("Redirecting to SPA: {}", redirectUrl);
 			
 			// Redirect back to the SPA
 			return ResponseEntity.status(HttpStatus.FOUND)
