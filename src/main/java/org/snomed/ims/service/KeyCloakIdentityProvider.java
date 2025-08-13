@@ -41,18 +41,18 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
 
     private final String keycloakClientSecrete;
 
-    private final String keycloakAdminUsername;
+    private final String keycloakAdminClientId;
 
-    private final String keycloakAdminPassword;
+    private final String keycloakAdminClientSecret;
 
-    public KeyCloakIdentityProvider(RestTemplate restTemplate, String keycloakUrl, String keycloakRealms, String keycloakClientId, String keycloakClientSecrete, String keycloakAdminUsername, String keycloakAdminPassword) {
+    public KeyCloakIdentityProvider(RestTemplate restTemplate, String keycloakUrl, String keycloakRealms, String keycloakClientId, String keycloakClientSecrete, String keycloakAdminClientId, String keycloakAdminClientSecret) {
         this.restTemplate = restTemplate;
         this.keycloakUrl = keycloakUrl;
         this.keycloakRealms = keycloakRealms;
         this.keycloakClientId = keycloakClientId;
         this.keycloakClientSecrete = keycloakClientSecrete;
-        this.keycloakAdminUsername = keycloakAdminUsername;
-        this.keycloakAdminPassword = keycloakAdminPassword;
+        this.keycloakAdminClientId = keycloakAdminClientId;
+        this.keycloakAdminClientSecret = keycloakAdminClientSecret;
     }
 
     @Override
@@ -346,7 +346,33 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
     }
 
     private String getAdminToken() {
-        return authenticate(this.keycloakAdminUsername, this.keycloakAdminPassword);
+        return authenticateAsClient(this.keycloakAdminClientId, this.keycloakAdminClientSecret);
+    }
+    
+    private String authenticateAsClient(String username, String password) {
+        if (username == null || username.isEmpty() || password == null || password.isEmpty()) {
+            return null;
+        }
+        try {
+            MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
+            map.add("grant_type", "client_credentials");
+            map.add("scope", "openid");
+            map.add(CLIENT_ID, username); // Use username as client_id for admin client
+            map.add(CLIENT_SECRET, password); // Use password as client_secret for admin client
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
+
+            Map<String, String> response = restTemplate.postForObject(REALMS + this.keycloakRealms + "/protocol/openid-connect/token", request, HashMap.class);
+            if (response == null) {
+                return null;
+            }
+            return response.getOrDefault("access_token", "");
+        } catch (Exception e) {
+            LOGGER.error("Failed to authenticate as admin client", e);
+            return null;
+        }
     }
 
     private User toUser(KeyCloakUser keyCloakUser) {
