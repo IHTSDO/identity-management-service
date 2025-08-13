@@ -28,7 +28,7 @@ class AuthControllerTest extends IntegrationTest {
         // given
         String returnTo = "/dashboard";
         when(identityProvider.buildAuthorizationUrl(anyString(), eq(false)))
-                .thenReturn("http://keycloak:8080/realms/test/protocol/openid-connect/auth?client_id=test-client&redirect_uri=http://localhost:8080/identity-management-service/api/auth/callback&response_type=code&scope=openid%20profile%20email");
+                .thenReturn("https://dev-snoauth.ihtsdotools.org/realms/test/protocol/openid-connect/auth?client_id=test-client&redirect_uri=http://localhost:8080/identity-management-service/api/auth/callback&response_type=code&scope=openid%20profile%20email");
 
         // when
         ResultActions resultActions = get(LOGIN_ENDPOINT + "?returnTo=" + returnTo);
@@ -42,7 +42,7 @@ class AuthControllerTest extends IntegrationTest {
         }
         assertEquals(302, status);
         assertTrue(location.contains("state=%2Fdashboard"));
-        assertTrue(location.contains("keycloak"));
+        assertTrue(location.contains("dev-snoauth.ihtsdotools.org"));
     }
 
     @Test
@@ -64,7 +64,7 @@ class AuthControllerTest extends IntegrationTest {
         // given
         String returnTo = "/dashboard";
         when(identityProvider.buildAuthorizationUrl(anyString(), eq(true)))
-                .thenReturn("http://keycloak:8080/realms/test/protocol/openid-connect/auth?client_id=test-client&redirect_uri=http://localhost:8080/identity-management-service/api/auth/callback&response_type=code&scope=openid%20profile%20email&prompt=none");
+                .thenReturn("https://dev-snoauth.ihtsdotools.org/realms/test/protocol/openid-connect/auth?client_id=test-client&redirect_uri=http://localhost:8080/identity-management-service/api/auth/callback&response_type=code&scope=openid%20profile%20email&prompt=none");
 
         // when
         ResultActions resultActions = get(AUTO_LOGIN_ENDPOINT + "?returnTo=" + returnTo);
@@ -78,7 +78,7 @@ class AuthControllerTest extends IntegrationTest {
         }
         assertEquals(302, status);
         assertTrue(location.contains("prompt=none"));
-        assertTrue(location.contains("keycloak"));
+        assertTrue(location.contains("dev-snoauth.ihtsdotools.org"));
     }
 
     @Test
