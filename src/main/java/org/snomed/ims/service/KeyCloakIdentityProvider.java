@@ -356,7 +356,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         try {
             MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
             map.add("grant_type", "client_credentials");
-            map.add("scope", "openid");
+            map.add("scope", "openid profile email");
             map.add(CLIENT_ID, username); // Use username as client_id for admin client
             map.add(CLIENT_SECRET, password); // Use password as client_secret for admin client
 
