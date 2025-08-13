@@ -53,6 +53,42 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         this.keycloakClientSecrete = keycloakClientSecrete;
         this.keycloakAdminClientId = keycloakAdminClientId;
         this.keycloakAdminClientSecret = keycloakAdminClientSecret;
+        
+        LOGGER.info("KeyCloakIdentityProvider initialized with:");
+        LOGGER.info("  - keycloakUrl: {}", keycloakUrl);
+        LOGGER.info("  - keycloakRealms: {}", keycloakRealms);
+        LOGGER.info("  - keycloakClientId: {}", keycloakClientId);
+        LOGGER.info("  - keycloakClientSecret: {}", keycloakClientSecrete != null ? "***" : "null");
+        LOGGER.info("  - keycloakAdminClientId: {}", keycloakAdminClientId);
+        LOGGER.info("  - keycloakAdminClientSecret: {}", keycloakAdminClientSecret != null ? "***" : "null");
+        
+        // Validate required configuration
+        if (keycloakUrl == null || keycloakUrl.isEmpty()) {
+            LOGGER.error("keycloakUrl is null or empty - this will cause all requests to fail");
+        }
+        if (keycloakRealms == null || keycloakRealms.isEmpty()) {
+            LOGGER.error("keycloakRealms is null or empty - this will cause all requests to fail");
+        }
+        if (keycloakAdminClientId == null || keycloakAdminClientId.isEmpty()) {
+            LOGGER.error("keycloakAdminClientId is null or empty - admin API calls will fail");
+        }
+        if (keycloakAdminClientSecret == null || keycloakAdminClientSecret.isEmpty()) {
+            LOGGER.error("keycloakAdminClientSecret is null or empty - admin API calls will fail");
+        }
+        
+        // Log constructed URLs for debugging
+        logConstructedUrls();
+    }
+
+    // Add this method after the constructor for debugging
+    private void logConstructedUrls() {
+        LOGGER.info("Constructed URLs for debugging:");
+        LOGGER.info("  - Admin token URL: {}{}{}/protocol/openid-connect/token", 
+            keycloakUrl, REALMS, keycloakRealms);
+        LOGGER.info("  - User groups URL: {}{}{}{}/groups", 
+            keycloakUrl, ADMIN_REALMS, keycloakRealms, USERS);
+        LOGGER.info("  - Group members URL: {}{}{}/groups/{{groupId}}/members", 
+            keycloakUrl, ADMIN_REALMS, keycloakRealms);
     }
 
     @Override
@@ -218,32 +254,65 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
     @Override
     public List<User> searchUsersByGroup(String currentUserId, String groupName, String username, int maxResults, int startAt) {
         if (groupName == null || groupName.isEmpty()) {
+            LOGGER.debug("Group name is null or empty, returning empty list");
             return Collections.emptyList();
         }
+        
+        LOGGER.debug("Searching for users in group: {}, currentUserId: {}, username filter: {}, maxResults: {}, startAt: {}", 
+            groupName, currentUserId, username, maxResults, startAt);
+        
         String adminToken = getAdminToken();
+        if (adminToken == null || adminToken.isEmpty()) {
+            LOGGER.error("Cannot search users by group - no admin token available");
+            return Collections.emptyList();
+        }
+        
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
         HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+        
         try {
+            // First API call: Get user's groups
+            String userGroupsUrl = ADMIN_REALMS + this.keycloakRealms + USERS + currentUserId + "/groups";
+            String fullUserGroupsUrl = keycloakUrl + userGroupsUrl;
+            LOGGER.debug("Making request to get user groups from: {}", fullUserGroupsUrl);
+            LOGGER.debug("Request headers: Authorization=Bearer ***{}", adminToken.substring(Math.max(0, adminToken.length() - 8)));
+            
             ResponseEntity<List<KeyCloakGroup>> groupResponse = restTemplate.exchange(
-                    ADMIN_REALMS + this.keycloakRealms + USERS + currentUserId + "/groups",
+                    fullUserGroupsUrl,
                     HttpMethod.GET,
                     requestEntity,
                     new ParameterizedTypeReference<>() {
                     }
             );
+            
             List<KeyCloakGroup> keyCloakGroups = groupResponse.getBody();
+            LOGGER.debug("User groups response status: {}, body size: {}", 
+                groupResponse.getStatusCode(), keyCloakGroups != null ? keyCloakGroups.size() : 0);
+            
             if (CollectionUtils.isEmpty(keyCloakGroups)) {
+                LOGGER.debug("No groups found for user: {}", currentUserId);
                 return Collections.emptyList();
             }
+            
+            LOGGER.debug("Found {} groups for user: {}", keyCloakGroups.size(), currentUserId);
+            keyCloakGroups.forEach(group -> LOGGER.debug("Group: {} (ID: {})", group.getName(), group.getId()));
+            
             List<User> users = getUsersForGroup(groupName, username, keyCloakGroups, requestEntity);
+            LOGGER.debug("Retrieved {} users for group: {}", users.size(), groupName);
+            
             if (startAt >= 0 && startAt < users.size()) {
                 int toIndex = Math.min(startAt + maxResults, users.size());
-                return users.subList(startAt, toIndex);
+                List<User> paginatedUsers = users.subList(startAt, toIndex);
+                LOGGER.debug("Returning paginated users: {} to {} (total: {})", startAt, toIndex - 1, paginatedUsers.size());
+                return paginatedUsers;
             }
+            
+            LOGGER.debug("No users found after pagination");
             return Collections.emptyList();
         } catch (Exception e) {
-            LOGGER.error("620cdd4c-f4c4-4105-8ebd-96b1925df746 Failed to get users by group name", e);
+            LOGGER.error("620cdd4c-f4c4-4105-8ebd-96b1925df746 Failed to get users by group name. Group: {}, CurrentUserId: {}, Error: {}", 
+                groupName, currentUserId, e.getMessage(), e);
             return Collections.emptyList();
         }
     }
@@ -346,14 +415,27 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
     }
 
     private String getAdminToken() {
-        return authenticateAsClient(this.keycloakAdminClientId, this.keycloakAdminClientSecret);
+        LOGGER.debug("Getting admin token for client ID: {}", keycloakAdminClientId);
+        String token = authenticateAsClient(this.keycloakAdminClientId, this.keycloakAdminClientSecret);
+        if (token == null || token.isEmpty()) {
+            LOGGER.error("Failed to obtain admin token - this will cause all admin API calls to fail");
+        } else {
+            LOGGER.debug("Admin token obtained successfully, length: {}", token.length());
+        }
+        return token;
     }
     
     private String authenticateAsClient(String username, String password) {
         if (username == null || username.isEmpty() || password == null || password.isEmpty()) {
+            LOGGER.warn("Admin client credentials are null or empty - username: {}, password: {}", 
+                username != null ? "***" : "null", 
+                password != null ? "***" : "null");
             return null;
         }
+        
         try {
+            LOGGER.debug("Attempting to authenticate admin client with ID: {}", username);
+            
             MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
             map.add("grant_type", "client_credentials");
             map.add("scope", "openid profile email");
@@ -364,13 +446,34 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
             HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
 
-            Map<String, String> response = restTemplate.postForObject(REALMS + this.keycloakRealms + "/protocol/openid-connect/token", request, HashMap.class);
+            // Build the full URL for admin client authentication
+            String tokenUrl = keycloakUrl + REALMS + this.keycloakRealms + "/protocol/openid-connect/token";
+            LOGGER.debug("Making admin client authentication request to: {}", tokenUrl);
+            LOGGER.debug("Request headers: {}", headers);
+            LOGGER.debug("Request body parameters: grant_type={}, scope={}, client_id={}, client_secret={}", 
+                "client_credentials", "openid profile email", username, "***");
+
+            Map<String, String> response = restTemplate.postForObject(tokenUrl, request, HashMap.class);
+            
             if (response == null) {
+                LOGGER.warn("Admin client authentication response is null");
                 return null;
             }
-            return response.getOrDefault("access_token", "");
+            
+            String accessToken = response.getOrDefault("access_token", "");
+            if (accessToken.isEmpty()) {
+                LOGGER.warn("Admin client authentication response contains no access_token. Response keys: {}", 
+                    response.keySet());
+                LOGGER.debug("Full response: {}", response);
+            } else {
+                LOGGER.debug("Admin client authentication successful, token length: {}", accessToken.length());
+            }
+            
+            return accessToken;
         } catch (Exception e) {
-            LOGGER.error("Failed to authenticate as admin client", e);
+            LOGGER.error("Failed to authenticate as admin client. URL: {}, Client ID: {}, Error: {}", 
+                keycloakUrl + REALMS + this.keycloakRealms + "/protocol/openid-connect/token",
+                username, e.getMessage(), e);
             return null;
         }
     }
@@ -404,23 +507,38 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         return keyCloakGroups.stream()
                 .filter(group -> group.getName().equals(groupName))
                 .flatMap(group -> {
+                    LOGGER.debug("Getting members for group: {} (ID: {})", group.getName(), group.getId());
+                    
+                    String groupMembersUrl = ADMIN_REALMS + this.keycloakRealms + "/groups/" + group.getId() + "/members?max=-1";
+                    String fullGroupMembersUrl = keycloakUrl + groupMembersUrl;
+                    LOGGER.debug("Making request to get group members from: {}", fullGroupMembersUrl);
+                    
                     ResponseEntity<List<KeyCloakUser>> userResponse = restTemplate.exchange(
-                            ADMIN_REALMS + this.keycloakRealms + "/groups/" + group.getId() + "/members?max=-1",
+                            fullGroupMembersUrl,
                             HttpMethod.GET,
                             requestEntity,
                             new ParameterizedTypeReference<>() {
                             }
                     );
+                    
+                    LOGGER.debug("Group members response status: {}, body size: {}", 
+                        userResponse.getStatusCode(), userResponse.getBody() != null ? userResponse.getBody().size() : 0);
+                    
                     List<KeyCloakUser> keyCloakUsers = userResponse.getBody();
                     if (CollectionUtils.isEmpty(keyCloakUsers)) {
+                        LOGGER.debug("No members found for group: {}", group.getName());
                         return Stream.empty();
                     }
+                    
+                    LOGGER.debug("Found {} members in group: {}", keyCloakUsers.size(), group.getName());
+                    
                     return keyCloakUsers.stream()
                             .filter(KeyCloakUser::isEnabled)
                             .filter(u -> !StringUtils.hasLength(username) || u.getUsername().contains(username))
                             .map(u -> {
                                 User user = toUser(u);
                                 user.setEmail(null);
+                                LOGGER.debug("Mapped user: {} (enabled: {})", u.getUsername(), u.isEnabled());
                                 return user;
                             });
                 }).distinct().toList();
