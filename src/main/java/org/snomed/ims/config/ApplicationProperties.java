@@ -38,11 +38,11 @@ public class ApplicationProperties {
 	@Value("${keycloak.client-secret}")
 	private String keycloakClientSecrete;
 
-	@Value("${keycloak.admin.username}")
-	private String keycloakAdminUsername;
+	@Value("${keycloak.admin.client-id}")
+	private String keycloakAdminClientId;
 
-	@Value("${keycloak.admin.password}")
-	private String keycloakAdminPassword;
+	@Value("${keycloak.admin.client-secret}")
+	private String keycloakAdminClientSecret;
 
 	@Value("${crowd.api.url}")
 	private String crowdApiUrl;
@@ -164,20 +164,20 @@ public class ApplicationProperties {
 		this.keycloakClientSecrete = keycloakClientSecrete;
 	}
 
-	public String getKeycloakAdminUsername() {
-		return keycloakAdminUsername;
+	public String getKeycloakAdminClientId() {
+		return keycloakAdminClientId;
 	}
 
-	public void setKeycloakAdminUsername(String keycloakAdminUsername) {
-		this.keycloakAdminUsername = keycloakAdminUsername;
+	public void setKeycloakAdminClientId(String keycloakAdminClientId) {
+		this.keycloakAdminClientId = keycloakAdminClientId;
 	}
 
-	public String getKeycloakAdminPassword() {
-		return keycloakAdminPassword;
+	public String getKeycloakAdminClientSecret() {
+		return keycloakAdminClientSecret;
 	}
 
-	public void setKeycloakAdminPassword(String keycloakAdminPassword) {
-		this.keycloakAdminPassword = keycloakAdminPassword;
+	public void setKeycloakAdminClientSecret(String keycloakAdminClientSecret) {
+		this.keycloakAdminClientSecret = keycloakAdminClientSecret;
 	}
 
 	public String getCrowdApiUrl() {
