@@ -28,8 +28,8 @@ public class CompressedTokenService {
     
     // Encryption configuration
     private static final String ALGORITHM = "AES/GCM/NoPadding";
-    private static final int KEY_SIZE = 256;
-    private static final int GCM_IV_LENGTH = 12;
+    private static final int KEY_SIZE = 128; // Reduced from 256 for smaller size
+    private static final int GCM_IV_LENGTH = 8; // Reduced from 12 for smaller size
     private static final int GCM_TAG_LENGTH = 16;
     
     @Value("${token.encryption.key:default-encryption-key-change-in-production}")
@@ -60,9 +60,9 @@ public class CompressedTokenService {
     }
     
     /**
-     * Encrypt and compress an access token using AES-256-GCM + GZIP
-     * @param accessToken the access token to encrypt and compress
-     * @return the encrypted and compressed token as a Base64 string, or null if operation fails
+     * Compress and encrypt an access token using lightweight AES-128-GCM
+     * @param accessToken the access token to compress and encrypt
+     * @return the compressed and encrypted token as a Base64 string, or null if operation fails
      */
     public String compressToken(String accessToken) {
         if (accessToken == null || accessToken.isEmpty()) {
@@ -70,9 +70,18 @@ public class CompressedTokenService {
         }
         
         try {
+            // 1. Compress the plain token first (better compression ratio)
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            try (GZIPOutputStream gzip = new GZIPOutputStream(baos)) {
+                gzip.write(accessToken.getBytes(StandardCharsets.UTF_8));
+            }
+            
+            byte[] compressed = baos.toByteArray();
+            
+            // 2. Always encrypt for security, but with lightweight settings
             initializeEncryptionKey();
             
-            // 1. Encrypt the plain token
+            // Use smaller IV (8 bytes instead of 12) and AES-128
             byte[] iv = new byte[GCM_IV_LENGTH];
             secureRandom.nextBytes(iv);
             
@@ -80,35 +89,29 @@ public class CompressedTokenService {
             GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH * 8, iv);
             cipher.init(Cipher.ENCRYPT_MODE, secretKey, gcmSpec);
             
-            byte[] encrypted = cipher.doFinal(accessToken.getBytes(StandardCharsets.UTF_8));
+            byte[] encrypted = cipher.doFinal(compressed);
             
-            // 2. Combine IV + encrypted data
+            // Combine IV + encrypted data
             byte[] combined = new byte[iv.length + encrypted.length];
             System.arraycopy(iv, 0, combined, 0, iv.length);
             System.arraycopy(encrypted, 0, combined, iv.length, encrypted.length);
             
-            // 3. Compress the encrypted data
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            try (GZIPOutputStream gzip = new GZIPOutputStream(baos)) {
-                gzip.write(combined);
-            }
+            // Base64 encode the result
+            String result = Base64.getUrlEncoder().withoutPadding().encodeToString(combined);
             
-            // 4. Base64 encode
-            String result = Base64.getUrlEncoder().withoutPadding().encodeToString(baos.toByteArray());
-            
-            LOGGER.debug("Encrypted and compressed token from {} to {} characters ({}% reduction)", 
+            LOGGER.debug("Compressed and encrypted token from {} to {} characters ({}% change)", 
                 accessToken.length(), result.length(), 
-                Math.round((1.0 - (double) result.length() / accessToken.length()) * 100));
+                Math.round(((double) result.length() / accessToken.length() - 1.0) * 100));
             
             return result;
         } catch (Exception e) {
-            LOGGER.error("Failed to encrypt and compress token", e);
+            LOGGER.error("Failed to compress and encrypt token", e);
             return null;
         }
     }
     
     /**
-     * Decrypt and decompress a token back to the original access token
+     * Decompress and decrypt a token back to the original access token
      * @param encryptedCompressedToken the encrypted and compressed token to decrypt and decompress
      * @return the original access token, or null if operation fails
      */
@@ -121,38 +124,36 @@ public class CompressedTokenService {
             initializeEncryptionKey();
             
             // 1. Base64 decode
-            byte[] compressed = Base64.getUrlDecoder().decode(encryptedCompressedToken);
+            byte[] decoded = Base64.getUrlDecoder().decode(encryptedCompressedToken);
             
-            // 2. Decompress
-            ByteArrayInputStream bais = new ByteArrayInputStream(compressed);
-            byte[] combined;
-            try (GZIPInputStream gzip = new GZIPInputStream(bais)) {
-                combined = gzip.readAllBytes();
-            }
-            
-            // 3. Extract IV and encrypted data
-            if (combined.length < GCM_IV_LENGTH + GCM_TAG_LENGTH) {
+            // 2. Decrypt first (the data is encrypted, not compressed)
+            if (decoded.length < GCM_IV_LENGTH + GCM_TAG_LENGTH) {
                 LOGGER.error("Token too short to contain valid encrypted data");
                 return null;
             }
             
             byte[] iv = new byte[GCM_IV_LENGTH];
-            byte[] encrypted = new byte[combined.length - GCM_IV_LENGTH];
-            System.arraycopy(combined, 0, iv, 0, GCM_IV_LENGTH);
-            System.arraycopy(combined, GCM_IV_LENGTH, encrypted, 0, encrypted.length);
+            byte[] encrypted = new byte[decoded.length - GCM_IV_LENGTH];
+            System.arraycopy(decoded, 0, iv, 0, GCM_IV_LENGTH);
+            System.arraycopy(decoded, GCM_IV_LENGTH, encrypted, 0, encrypted.length);
             
-            // 4. Decrypt
+            // 3. Decrypt
             Cipher cipher = Cipher.getInstance(ALGORITHM);
             GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH * 8, iv);
             cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmSpec);
             
             byte[] decrypted = cipher.doFinal(encrypted);
-            String result = new String(decrypted, StandardCharsets.UTF_8);
             
-            LOGGER.debug("Decrypted and decompressed token from {} to {} characters", 
-                encryptedCompressedToken.length(), result.length());
-            
-            return result;
+            // 4. Decompress the decrypted data
+            ByteArrayInputStream bais = new ByteArrayInputStream(decrypted);
+            try (GZIPInputStream gzip = new GZIPInputStream(bais)) {
+                String result = new String(gzip.readAllBytes(), StandardCharsets.UTF_8);
+                
+                LOGGER.debug("Decrypted and decompressed token from {} to {} characters", 
+                    encryptedCompressedToken.length(), result.length());
+                
+                return result;
+            }
         } catch (Exception e) {
             LOGGER.error("Failed to decrypt and decompress token", e);
             return null;
