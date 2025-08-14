@@ -67,7 +67,21 @@ public class AccountController {
 			for (Cookie cookie : cookies) {
 				if (isCookieValid(cookie)) {
 					if (StringUtils.isNotEmpty(cookie.getValue())) {
-						identityProvider.invalidateToken(cookie.getValue());
+						try {
+							// Decompress and decrypt the token before invalidating it
+							String compressedToken = cookie.getValue();
+							String accessToken = compressedTokenService.decompressToken(compressedToken);
+							
+							if (accessToken != null) {
+								// Invalidate the actual access token with Keycloak
+								identityProvider.invalidateToken(accessToken);
+								LOGGER.debug("Successfully invalidated token with identity provider");
+							} else {
+								LOGGER.warn("Failed to decompress token during logout, but continuing with cookie cleanup");
+							}
+						} catch (Exception e) {
+							LOGGER.error("Error during token invalidation, but continuing with cookie cleanup", e);
+						}
 					}
 
 					// invalidate cookie
