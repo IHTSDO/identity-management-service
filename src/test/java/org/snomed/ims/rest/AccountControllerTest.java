@@ -64,7 +64,11 @@ class AccountControllerTest extends IntegrationTest {
 	@Test
 	void getAccount_ShouldReturnExpected_WhenSuccessfullyGettingUser() {
 		// given
-		Cookie cookie = new Cookie(applicationProperties.getCookieName(), "value");
+		// First store a token in the token store to get a session ID
+		String testToken = "test-access-token";
+		String sessionId = tokenStoreService.storeToken(testToken);
+		
+		Cookie cookie = new Cookie(applicationProperties.getCookieName(), sessionId);
 		User user = new User();
 		user.setLogin("test-login");
 
