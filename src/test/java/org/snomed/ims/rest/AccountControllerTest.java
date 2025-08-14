@@ -107,7 +107,11 @@ class AccountControllerTest extends IntegrationTest {
 	@Test
 	void logout_ShouldReturnExpected_WhenGivenCookie() {
 		// given
-		Cookie cookie = new Cookie(applicationProperties.getCookieName(), "value");
+		// Use the same CompressedTokenService instance that's in the controller
+		String testToken = "test-access-token";
+		String compressedToken = compressedTokenService.compressToken(testToken);
+		
+		Cookie cookie = new Cookie(applicationProperties.getCookieName(), compressedToken);
 
 		// when
 		ResultActions resultActions = post(POST_LOG_OUT, cookie);
