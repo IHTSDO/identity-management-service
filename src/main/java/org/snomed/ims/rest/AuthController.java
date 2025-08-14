@@ -248,8 +248,13 @@ public class AuthController {
 			contextPath = "";
 		}
 		
-		// Don't add /api prefix if context path already includes it
-		String callbackPath = contextPath.endsWith("/api") ? "/auth/callback" : "/api/auth/callback";
-		return scheme + "://" + host + contextPath + callbackPath;
+		// Since contextPath is already /api, just add /auth/callback
+		String callbackPath = "/auth/callback";
+		String fullCallbackUrl = scheme + "://" + host + contextPath + callbackPath;
+		
+		LOGGER.debug("Building callback URL - scheme: {}, host: {}, contextPath: {}, callbackPath: {}, fullUrl: {}", 
+		    scheme, host, contextPath, callbackPath, fullCallbackUrl);
+		
+		return fullCallbackUrl;
 	}
 }
