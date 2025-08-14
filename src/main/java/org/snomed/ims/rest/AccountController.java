@@ -12,7 +12,7 @@ import org.snomed.ims.config.ApplicationProperties;
 import org.snomed.ims.domain.AuthenticationResponse;
 import org.snomed.ims.domain.User;
 import org.snomed.ims.service.IdentityProvider;
-import org.snomed.ims.service.TokenStoreService;
+import org.snomed.ims.service.CompressedTokenService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -34,7 +34,7 @@ public class AccountController {
     private static final String AUTH_HEADER_USERNAME = AUTH_HEADER_PREFIX + "username";
 
     	private final IdentityProvider identityProvider;
-	private final TokenStoreService tokenStoreService;
+	private final CompressedTokenService compressedTokenService;
 
 	private final String cookieName;
 	private final Integer cookieMaxAge;
@@ -42,9 +42,9 @@ public class AccountController {
 	private final boolean cookieSecureFlag;
 
 
-	public AccountController(IdentityProvider identityProvider, TokenStoreService tokenStoreService, ApplicationProperties applicationProperties) {
+	public AccountController(IdentityProvider identityProvider, CompressedTokenService compressedTokenService, ApplicationProperties applicationProperties) {
 		this.identityProvider = identityProvider;
-		this.tokenStoreService = tokenStoreService;
+		this.compressedTokenService = compressedTokenService;
 		this.cookieName = applicationProperties.getCookieName();
 		this.cookieMaxAge = applicationProperties.getCookieMaxAgeInt();
 		this.cookieDomain = applicationProperties.getCookieDomain();
@@ -67,9 +67,7 @@ public class AccountController {
 			for (Cookie cookie : cookies) {
 				if (isCookieValid(cookie)) {
 					if (StringUtils.isNotEmpty(cookie.getValue())) {
-						// Remove the token from the token store
-						tokenStoreService.removeAccessToken(cookie.getValue());
-						// Note: We can't invalidate the token with Keycloak since we only have the session ID
+						identityProvider.invalidateToken(cookie.getValue());
 					}
 
 					// invalidate cookie
@@ -93,20 +91,18 @@ public class AccountController {
 			for (Cookie cookie : cookies) {
 				if (isCookieValid(cookie)) {
 					try {
-						// Get the actual access token from the session ID stored in the cookie
-						String sessionId = cookie.getValue();
-						String accessToken = tokenStoreService.getAccessToken(sessionId);
+						// Decompress the token from the cookie
+						String compressedToken = cookie.getValue();
+						String accessToken = compressedTokenService.decompressToken(compressedToken);
 						
 						if (accessToken == null) {
-							LOGGER.error("Session ID not found in token store: {}", sessionId);
+							LOGGER.error("Failed to decompress token from cookie");
 							cookie.setMaxAge(0);
 							cookie.setValue("");
 							cookie.setPath("/");
 							response.addCookie(cookie);
-							
-							String loginUrl = buildLoginUrl(request);
 							return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-									.body(AuthenticationResponse.unauthenticated(loginUrl));
+									.body(AuthenticationResponse.unauthenticated(buildLoginUrl(request)));
 						}
 						
 						User user = identityProvider.getUserByToken(accessToken);

@@ -4,6 +4,7 @@ package org.snomed.ims.rest;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.snomed.ims.domain.User;
+import org.snomed.ims.service.CompressedTokenService;
 import org.springframework.test.web.servlet.ResultActions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,7 +48,11 @@ class AccountControllerTest extends IntegrationTest {
 	@Test
 	void getAccount_ShouldReturnExpected_WhenFailingToGetUser() {
 		// given
-		Cookie cookie = new Cookie(applicationProperties.getCookieName(), "value");
+		// Use the same CompressedTokenService instance that's in the controller
+		String testToken = "test-access-token";
+		String compressedToken = compressedTokenService.compressToken(testToken);
+		
+		Cookie cookie = new Cookie(applicationProperties.getCookieName(), compressedToken);
 		givenGetUserByTokenThrowsException();
 
 		// when
@@ -64,11 +69,11 @@ class AccountControllerTest extends IntegrationTest {
 	@Test
 	void getAccount_ShouldReturnExpected_WhenSuccessfullyGettingUser() {
 		// given
-		// First store a token in the token store to get a session ID
+		// Use the same CompressedTokenService instance that's in the controller
 		String testToken = "test-access-token";
-		String sessionId = tokenStoreService.storeToken(testToken);
+		String compressedToken = compressedTokenService.compressToken(testToken);
 		
-		Cookie cookie = new Cookie(applicationProperties.getCookieName(), sessionId);
+		Cookie cookie = new Cookie(applicationProperties.getCookieName(), compressedToken);
 		User user = new User();
 		user.setLogin("test-login");
 

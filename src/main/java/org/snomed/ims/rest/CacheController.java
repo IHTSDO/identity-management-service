@@ -11,7 +11,7 @@ import org.snomed.ims.service.AuthoritiesConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.ims.service.IdentityProvider;
-import org.snomed.ims.service.TokenStoreService;
+import org.snomed.ims.service.CompressedTokenService;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpStatus;
@@ -25,13 +25,13 @@ public class CacheController {
 
 	private final IdentityProvider identityProvider;
 	private final CacheManager cacheManager;
-	private final TokenStoreService tokenStoreService;
+	private final CompressedTokenService compressedTokenService;
 	private final String cookieName;
 
-	public CacheController(IdentityProvider identityProvider, CacheManager cacheManager, TokenStoreService tokenStoreService, ApplicationProperties applicationProperties) {
+	public CacheController(IdentityProvider identityProvider, CacheManager cacheManager, CompressedTokenService compressedTokenService, ApplicationProperties applicationProperties) {
 		this.identityProvider = identityProvider;
 		this.cacheManager = cacheManager;
-		this.tokenStoreService = tokenStoreService;
+		this.compressedTokenService = compressedTokenService;
 		this.cookieName = applicationProperties.getCookieName();
 	}
 
@@ -53,17 +53,17 @@ public class CacheController {
 	private ResponseEntity<String> doClearCache(HttpServletResponse response, Cookie[] cookies) {
 		for (Cookie cookie : cookies) {
 			if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
-				// Get the actual access token from the session ID stored in the cookie
-				String sessionId = cookie.getValue();
-				String accessToken = tokenStoreService.getAccessToken(sessionId);
+				// Decompress the token from the cookie
+				String compressedToken = cookie.getValue();
+				String accessToken = compressedTokenService.decompressToken(compressedToken);
 				
 				if (accessToken == null) {
-					LOGGER.error("Session ID not found in token store: {}", sessionId);
+					LOGGER.error("Failed to decompress token from cookie");
 					cookie.setMaxAge(0);
 					cookie.setValue("");
 					cookie.setPath("/");
 					response.addCookie(cookie);
-					return new ResponseEntity<>("Session not found", HttpStatus.FORBIDDEN);
+					return new ResponseEntity<>("Failed to decompress token", HttpStatus.FORBIDDEN);
 				}
 				
 				User user = identityProvider.getUserByToken(accessToken);

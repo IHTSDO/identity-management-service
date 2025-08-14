@@ -7,7 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.snomed.ims.config.ApplicationProperties;
 import org.snomed.ims.domain.User;
 import org.snomed.ims.service.IdentityProvider;
-import org.snomed.ims.service.TokenStoreService;
+import org.snomed.ims.service.CompressedTokenService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -20,13 +20,13 @@ import java.util.List;
 @Tag(name = "GroupController")
 public class GroupController {
 	private final IdentityProvider identityProvider;
-	private final TokenStoreService tokenStoreService;
+	private final CompressedTokenService compressedTokenService;
 
 	private final String cookieName;
 
-	public GroupController(IdentityProvider identityProvider, TokenStoreService tokenStoreService, ApplicationProperties applicationProperties) {
+	public GroupController(IdentityProvider identityProvider, CompressedTokenService compressedTokenService, ApplicationProperties applicationProperties) {
 		this.identityProvider = identityProvider;
-		this.tokenStoreService = tokenStoreService;
+		this.compressedTokenService = compressedTokenService;
 		this.cookieName = applicationProperties.getCookieName();
 	}
 
@@ -51,12 +51,12 @@ public class GroupController {
 			for (Cookie cookie : cookies) {
 				if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
 					try {
-						// Get the actual access token from the session ID stored in the cookie
-						String sessionId = cookie.getValue();
-						String accessToken = tokenStoreService.getAccessToken(sessionId);
+						// Decompress the token from the cookie
+						String compressedToken = cookie.getValue();
+						String accessToken = compressedTokenService.decompressToken(compressedToken);
 						
 						if (accessToken == null) {
-							// Session ID not found, invalidate cookie
+							// Failed to decompress token, invalidate cookie
 							cookie.setMaxAge(0);
 							cookie.setValue("");
 							cookie.setPath("/");

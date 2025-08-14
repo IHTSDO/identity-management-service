@@ -9,7 +9,7 @@ import org.snomed.ims.domain.User;
 import org.snomed.ims.domain.UserPasswordUpdateRequest;
 import org.snomed.ims.domain.UserInformationUpdateRequest;
 import org.snomed.ims.service.IdentityProvider;
-import org.snomed.ims.service.TokenStoreService;
+import org.snomed.ims.service.CompressedTokenService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -23,13 +23,13 @@ import java.util.List;
 public class UserController {
 
 	private final IdentityProvider identityProvider;
-	private final TokenStoreService tokenStoreService;
+	private final CompressedTokenService compressedTokenService;
 
 	private final String cookieName;
 
-	public UserController(IdentityProvider identityProvider, TokenStoreService tokenStoreService, ApplicationProperties applicationProperties) {
+	public UserController(IdentityProvider identityProvider, CompressedTokenService compressedTokenService, ApplicationProperties applicationProperties) {
 		this.identityProvider = identityProvider;
-		this.tokenStoreService = tokenStoreService;
+		this.compressedTokenService = compressedTokenService;
 		this.cookieName = applicationProperties.getCookieName();
 	}
 
@@ -65,9 +65,9 @@ public class UserController {
 			if (cookies != null) {
 				for (Cookie cookie : cookies) {
 					if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
-						// Get the actual access token from the session ID stored in the cookie
-						String sessionId = cookie.getValue();
-						token = tokenStoreService.getAccessToken(sessionId);
+						// Decompress the token from the cookie
+						String compressedToken = cookie.getValue();
+						token = compressedTokenService.decompressToken(compressedToken);
 						break;
 					}
 				}
@@ -108,12 +108,12 @@ public class UserController {
 			for (Cookie cookie : cookies) {
 				if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
 					try {
-						// Get the actual access token from the session ID stored in the cookie
-						String sessionId = cookie.getValue();
-						String accessToken = tokenStoreService.getAccessToken(sessionId);
+						// Decompress the token from the cookie
+						String compressedToken = cookie.getValue();
+						String accessToken = compressedTokenService.decompressToken(compressedToken);
 						
 						if (accessToken == null) {
-							// Session ID not found, invalidate cookie
+							// Failed to decompress token, invalidate cookie
 							cookie.setMaxAge(0);
 							cookie.setValue("");
 							cookie.setPath("/");
