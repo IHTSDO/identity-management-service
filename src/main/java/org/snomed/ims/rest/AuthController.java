@@ -9,7 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.ims.config.ApplicationProperties;
 import org.snomed.ims.service.IdentityProvider;
-import org.snomed.ims.service.TokenStoreService;
+import org.snomed.ims.service.CompressedTokenService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -29,15 +29,15 @@ public class AuthController {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AuthController.class);
 
 	private final IdentityProvider identityProvider;
-	private final TokenStoreService tokenStoreService;
+	private final CompressedTokenService compressedTokenService;
 	private final String cookieName;
 	private final Integer cookieMaxAge;
 	private final String cookieDomain;
 	private final boolean cookieSecureFlag;
 
-	public AuthController(IdentityProvider identityProvider, TokenStoreService tokenStoreService, ApplicationProperties applicationProperties) {
+	public AuthController(IdentityProvider identityProvider, CompressedTokenService compressedTokenService, ApplicationProperties applicationProperties) {
 		this.identityProvider = identityProvider;
-		this.tokenStoreService = tokenStoreService;
+		this.compressedTokenService = compressedTokenService;
 		this.cookieName = applicationProperties.getCookieName();
 		this.cookieMaxAge = applicationProperties.getCookieMaxAgeInt();
 		this.cookieDomain = applicationProperties.getCookieDomain();
@@ -135,11 +135,9 @@ public class AuthController {
 			
 			LOGGER.debug("Successfully obtained access token, length: {}", accessToken.length());
 			
-			// Generate a short session ID and store the token server-side
-			String sessionId = tokenStoreService.storeToken(accessToken);
-			
-			// Set IMS session cookie with session ID instead of full token
-			Cookie imsCookie = new Cookie(cookieName, sessionId);
+			// Set IMS session cookie with compressed token
+			String compressedToken = compressedTokenService.compressToken(accessToken);
+			Cookie imsCookie = new Cookie(cookieName, compressedToken);
 			if (cookieMaxAge != null) {
 				imsCookie.setMaxAge(cookieMaxAge);
 			}
@@ -150,8 +148,8 @@ public class AuthController {
 			imsCookie.setAttribute("SameSite", "Lax");
 			response.addCookie(imsCookie);
 			
-			LOGGER.debug("Set IMS session cookie: name={}, domain={}, secure={}, httpOnly={}, sessionId={}", 
-			    cookieName, cookieDomain, cookieSecureFlag, true, sessionId);
+			LOGGER.debug("Set IMS session cookie: name={}, domain={}, secure={}, httpOnly={}, compressedTokenLength={}", 
+			    cookieName, cookieDomain, cookieSecureFlag, true, compressedToken.length());
 			
 			// Extract returnTo from state parameter and decode it
 			String returnTo = "/#/home"; // Default to frontend home

@@ -5,7 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.snomed.ims.config.ApplicationProperties;
 import org.snomed.ims.service.IdentityProvider;
-import org.snomed.ims.service.TokenStoreService;
+import org.snomed.ims.service.CompressedTokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -27,42 +27,7 @@ import static org.mockito.Mockito.when;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class IntegrationTest {
 	protected IdentityProvider identityProvider = mock(IdentityProvider.class);
-	protected TokenStoreService tokenStoreService = new MockTokenStoreService();
-	
-	// Mock implementation of TokenStoreService for testing
-	private static class MockTokenStoreService extends TokenStoreService {
-		private final java.util.Map<String, String> tokenStore = new java.util.HashMap<>();
-		
-		@Override
-		public String storeToken(String accessToken) {
-			if (accessToken == null || accessToken.isEmpty()) {
-				return null;
-			}
-			String sessionId = java.util.UUID.randomUUID().toString();
-			tokenStore.put(sessionId, accessToken);
-			return sessionId;
-		}
-		
-		@Override
-		public String getAccessToken(String sessionId) {
-			if (sessionId == null || sessionId.isEmpty()) {
-				return null;
-			}
-			return tokenStore.get(sessionId);
-		}
-		
-		@Override
-		public void removeAccessToken(String sessionId) {
-			if (sessionId != null && !sessionId.isEmpty()) {
-				tokenStore.remove(sessionId);
-			}
-		}
-		
-		@Override
-		public boolean hasSession(String sessionId) {
-			return sessionId != null && !sessionId.isEmpty() && tokenStore.containsKey(sessionId);
-		}
-	}
+	protected CompressedTokenService compressedTokenService;
 
 	@Autowired
 	protected ApplicationProperties applicationProperties;
@@ -71,13 +36,17 @@ class IntegrationTest {
 
 	@BeforeEach
 	void setUp() {
-		AccountController accountController = new AccountController(identityProvider, tokenStoreService, applicationProperties);
-		AuthController authController = new AuthController(identityProvider, tokenStoreService, applicationProperties);
+		CompressedTokenService compressedTokenService = new CompressedTokenService();
+		AccountController accountController = new AccountController(identityProvider, compressedTokenService, applicationProperties);
+		AuthController authController = new AuthController(identityProvider, compressedTokenService, applicationProperties);
 		VersionController versionController = new VersionController(applicationProperties);
 
 		this.mockMvc = MockMvcBuilders
 				.standaloneSetup(accountController, authController, versionController)
 				.build();
+		
+		// Store the service for tests to use
+		this.compressedTokenService = compressedTokenService;
 	}
 
 	@Test
