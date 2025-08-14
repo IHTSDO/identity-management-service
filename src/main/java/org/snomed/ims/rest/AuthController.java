@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.ims.config.ApplicationProperties;
 import org.snomed.ims.service.IdentityProvider;
+import org.snomed.ims.service.TokenStoreService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,9 @@ import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import jakarta.servlet.http.HttpSession;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @Tag(name = "AuthController")
@@ -25,13 +29,15 @@ public class AuthController {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AuthController.class);
 
 	private final IdentityProvider identityProvider;
+	private final TokenStoreService tokenStoreService;
 	private final String cookieName;
 	private final Integer cookieMaxAge;
 	private final String cookieDomain;
 	private final boolean cookieSecureFlag;
 
-	public AuthController(IdentityProvider identityProvider, ApplicationProperties applicationProperties) {
+	public AuthController(IdentityProvider identityProvider, TokenStoreService tokenStoreService, ApplicationProperties applicationProperties) {
 		this.identityProvider = identityProvider;
+		this.tokenStoreService = tokenStoreService;
 		this.cookieName = applicationProperties.getCookieName();
 		this.cookieMaxAge = applicationProperties.getCookieMaxAgeInt();
 		this.cookieDomain = applicationProperties.getCookieDomain();
@@ -104,8 +110,8 @@ public class AuthController {
 	 * Handle OAuth callback from Keycloak
 	 */
 	@GetMapping("/auth/callback")
-	public ResponseEntity<Void> callback(@RequestParam String code,
-	                                    @RequestParam String state,
+	public ResponseEntity<Void> callback(@RequestParam("code") String code,
+	                                    @RequestParam(value = "state", required = false) String state,
 	                                    HttpServletRequest request,
 	                                    HttpServletResponse response) {
 		LOGGER.debug("REST request to handle OAuth callback");
@@ -129,8 +135,11 @@ public class AuthController {
 			
 			LOGGER.debug("Successfully obtained access token, length: {}", accessToken.length());
 			
-			// Set IMS session cookie
-			Cookie imsCookie = new Cookie(cookieName, accessToken);
+			// Generate a short session ID and store the token server-side
+			String sessionId = tokenStoreService.storeToken(accessToken);
+			
+			// Set IMS session cookie with session ID instead of full token
+			Cookie imsCookie = new Cookie(cookieName, sessionId);
 			if (cookieMaxAge != null) {
 				imsCookie.setMaxAge(cookieMaxAge);
 			}
@@ -141,8 +150,8 @@ public class AuthController {
 			imsCookie.setAttribute("SameSite", "Lax");
 			response.addCookie(imsCookie);
 			
-			LOGGER.debug("Set IMS session cookie: name={}, domain={}, secure={}, httpOnly={}", 
-			    cookieName, cookieDomain, cookieSecureFlag, true);
+			LOGGER.debug("Set IMS session cookie: name={}, domain={}, secure={}, httpOnly={}, sessionId={}", 
+			    cookieName, cookieDomain, cookieSecureFlag, true, sessionId);
 			
 			// Extract returnTo from state parameter and decode it
 			String returnTo = "/#/home"; // Default to frontend home

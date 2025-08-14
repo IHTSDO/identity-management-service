@@ -11,6 +11,7 @@ import org.snomed.ims.service.AuthoritiesConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.ims.service.IdentityProvider;
+import org.snomed.ims.service.TokenStoreService;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpStatus;
@@ -24,11 +25,13 @@ public class CacheController {
 
 	private final IdentityProvider identityProvider;
 	private final CacheManager cacheManager;
+	private final TokenStoreService tokenStoreService;
 	private final String cookieName;
 
-	public CacheController(IdentityProvider identityProvider, CacheManager cacheManager, ApplicationProperties applicationProperties) {
+	public CacheController(IdentityProvider identityProvider, CacheManager cacheManager, TokenStoreService tokenStoreService, ApplicationProperties applicationProperties) {
 		this.identityProvider = identityProvider;
 		this.cacheManager = cacheManager;
+		this.tokenStoreService = tokenStoreService;
 		this.cookieName = applicationProperties.getCookieName();
 	}
 
@@ -50,7 +53,20 @@ public class CacheController {
 	private ResponseEntity<String> doClearCache(HttpServletResponse response, Cookie[] cookies) {
 		for (Cookie cookie : cookies) {
 			if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
-				User user = identityProvider.getUserByToken(cookie.getValue());
+				// Get the actual access token from the session ID stored in the cookie
+				String sessionId = cookie.getValue();
+				String accessToken = tokenStoreService.getAccessToken(sessionId);
+				
+				if (accessToken == null) {
+					LOGGER.error("Session ID not found in token store: {}", sessionId);
+					cookie.setMaxAge(0);
+					cookie.setValue("");
+					cookie.setPath("/");
+					response.addCookie(cookie);
+					return new ResponseEntity<>("Session not found", HttpStatus.FORBIDDEN);
+				}
+				
+				User user = identityProvider.getUserByToken(accessToken);
 				if (user == null) {
 					LOGGER.error("4a19d36a-7cd1-4f25-be16-c7c19d63238e Failed to find user by token; invalidating cookie.");
 
