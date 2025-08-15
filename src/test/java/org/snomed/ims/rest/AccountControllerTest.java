@@ -24,7 +24,7 @@ class AccountControllerTest extends IntegrationTest {
 		String body = getBody(resultActions);
 
 		// then
-		assertEquals(401, status);
+		assertEquals(403, status);
 		assertTrue(body.contains("\"authenticated\":false"));
 		assertTrue(body.contains("\"loginUrl\""));
 	}
@@ -40,7 +40,7 @@ class AccountControllerTest extends IntegrationTest {
 		String body = getBody(resultActions);
 
 		// then
-		assertEquals(401, status);
+		assertEquals(403, status);
 		assertTrue(body.contains("\"authenticated\":false"));
 		assertTrue(body.contains("\"loginUrl\""));
 	}
@@ -60,7 +60,7 @@ class AccountControllerTest extends IntegrationTest {
 		String body = getBody(resultActions);
 
 		// then
-		assertEquals(401, status);
+		assertEquals(403, status);
 		assertTrue(body.contains("\"authenticated\":false"));
 		assertTrue(body.contains("\"loginUrl\""));
 	}

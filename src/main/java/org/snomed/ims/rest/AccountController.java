@@ -116,9 +116,9 @@ public class AccountController {
 							cookie.setPath("/");
 							response.addCookie(cookie);
 
-							// Return 401 with login URL instead of 302 redirect
+							// Return 403 with login URL instead of 302 redirect
 							String loginUrl = buildLoginUrl(request);
-							return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+							return ResponseEntity.status(HttpStatus.FORBIDDEN)
 									.body(AuthenticationResponse.unauthenticated(loginUrl));
 						}
 
@@ -135,9 +135,9 @@ public class AccountController {
 						cookie.setPath("/");
 						response.addCookie(cookie);
 
-						// Return 401 with login URL when exception occurs
+						// Return 403 with login URL when exception occurs
 						String loginUrl = buildLoginUrl(request);
-						return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+						return ResponseEntity.status(HttpStatus.FORBIDDEN)
 								.body(AuthenticationResponse.unauthenticated(loginUrl));
 					}
 				}
@@ -156,10 +156,10 @@ public class AccountController {
         String error = request.getParameter("error");
         String code = request.getParameter("code");
 
-        // If Keycloak indicated login is required, return 401 with login URL
+        // If Keycloak indicated login is required, return 403 with login URL
         if ("login_required".equals(error)) {
             String loginUrl = buildLoginUrl(request);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(AuthenticationResponse.unauthenticated(loginUrl));
         }
 
@@ -170,7 +170,7 @@ public class AccountController {
                 String accessToken = identityProvider.exchangeCodeForAccessToken(code, redirectUri);
                 if (accessToken == null || accessToken.isEmpty()) {
                     String loginUrl = buildLoginUrl(request);
-                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
                             .body(AuthenticationResponse.unauthenticated(loginUrl));
                 }
 
@@ -187,7 +187,7 @@ public class AccountController {
                 User user = identityProvider.getUserByToken(accessToken);
                 if (user == null) {
                     String loginUrl = buildLoginUrl(request);
-                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
                             .body(AuthenticationResponse.unauthenticated(loginUrl));
                 }
                 response.setHeader("Content-Type", "application/json;charset=UTF-8");
@@ -197,14 +197,14 @@ public class AccountController {
             } catch (Exception e) {
                 LOGGER.error("ea9b3b98-8f47-4d8c-9b93-9b7a23b6d2f3 Failed to exchange code for token", e);
                 String loginUrl = buildLoginUrl(request);
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(AuthenticationResponse.unauthenticated(loginUrl));
             }
         }
 
-        // No valid session, return 401 with login URL instead of 302 redirect
+        // No valid session, return 403 with login URL instead of 302 redirect
         String loginUrl = buildLoginUrl(request);
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(AuthenticationResponse.unauthenticated(loginUrl));
     }
 
