@@ -436,6 +436,9 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
                 return null;
             }
             
+            // Log the full introspection response for debugging
+            LOGGER.debug("Token introspection response body: {}", body);
+            
             // Check if token is active
             Boolean active = (Boolean) body.get("active");
             if (active == null || !active) {
@@ -463,9 +466,16 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             
             // Extract roles from realm_access.roles or resource_access
             List<String> roles = new ArrayList<>();
+            
+            // Log what we're looking for
+            LOGGER.debug("Looking for roles in introspection response...");
+            LOGGER.debug("Available keys in response: {}", body.keySet());
+            
             Object realmAccess = body.get("realm_access");
+            LOGGER.debug("realm_access: {}", realmAccess);
             if (realmAccess instanceof Map) {
                 Object rolesObj = ((Map<?, ?>) realmAccess).get("roles");
+                LOGGER.debug("realm_access.roles: {}", rolesObj);
                 if (rolesObj instanceof List) {
                     for (Object role : (List<?>) rolesObj) {
                         if (role instanceof String) {
@@ -477,11 +487,15 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             
             // If no roles found in realm_access, try resource_access
             if (roles.isEmpty()) {
+                LOGGER.debug("No roles found in realm_access, trying resource_access...");
                 Object resourceAccess = body.get("resource_access");
+                LOGGER.debug("resource_access: {}", resourceAccess);
                 if (resourceAccess instanceof Map) {
                     Object clientAccess = ((Map<?, ?>) resourceAccess).get(keycloakClientId);
+                    LOGGER.debug("resource_access.{}: {}", keycloakClientId, clientAccess);
                     if (clientAccess instanceof Map) {
                         Object clientRoles = ((Map<?, ?>) clientAccess).get("roles");
+                        LOGGER.debug("resource_access.{}.roles: {}", keycloakClientId, clientRoles);
                         if (clientRoles instanceof List) {
                             for (Object role : (List<?>) clientRoles) {
                                 if (role instanceof String) {
@@ -493,6 +507,37 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
                 }
             }
             
+            // Also check for roles directly in the response (some Keycloak versions put them here)
+            if (roles.isEmpty()) {
+                LOGGER.debug("No roles found in realm_access or resource_access, checking direct roles...");
+                Object directRoles = body.get("roles");
+                LOGGER.debug("Direct roles: {}", directRoles);
+                if (directRoles instanceof List) {
+                    for (Object role : (List<?>) directRoles) {
+                        if (role instanceof String) {
+                            roles.add((String) role);
+                        }
+                    }
+                }
+            }
+            
+            // Check for realm_access.roles (alternative path)
+            if (roles.isEmpty()) {
+                LOGGER.debug("No roles found in standard paths, checking realm_access.roles...");
+                if (realmAccess instanceof Map) {
+                    Object realmRoles = ((Map<?, ?>) realmAccess).get("roles");
+                    LOGGER.debug("realm_access.roles (alternative): {}", realmRoles);
+                    if (realmRoles instanceof List) {
+                        for (Object role : (List<?>) realmRoles) {
+                            if (role instanceof String) {
+                                roles.add((String) role);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            LOGGER.debug("Final extracted roles: {}", roles);
             user.setRoles(roles);
             
             LOGGER.debug("Lightweight JWT token introspection successful for user: {}", username);
@@ -517,6 +562,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         form.add("grant_type", "authorization_code");
         form.add("code", code);
         form.add("redirect_uri", redirectUri);
+        form.add("scope", "openid profile email"); // Add scope for roles and user info
         form.add(CLIENT_ID, keycloakClientId);
         form.add(CLIENT_SECRET, keycloakClientSecrete);
 
@@ -532,6 +578,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         LOGGER.debug("  - grant_type: authorization_code");
         LOGGER.debug("  - code: {}...{}", code.substring(0, Math.min(8, code.length())), 
             code.substring(Math.max(0, code.length() - 8)));
+        LOGGER.debug("  - scope: openid profile email");
         LOGGER.debug("  - redirect_uri: {}", redirectUri);
         LOGGER.debug("  - client_id: {}", keycloakClientId);
         LOGGER.debug("  - client_secret: {}", keycloakClientSecrete != null ? "***" : "null");
