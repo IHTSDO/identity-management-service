@@ -11,7 +11,7 @@ import org.snomed.ims.service.AuthoritiesConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.ims.service.IdentityProvider;
-import org.snomed.ims.service.CompressedTokenService;
+import org.snomed.ims.service.KeyCloakIdentityProvider;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpStatus;
@@ -25,13 +25,12 @@ public class CacheController {
 
 	private final IdentityProvider identityProvider;
 	private final CacheManager cacheManager;
-	private final CompressedTokenService compressedTokenService;
+
 	private final String cookieName;
 
-	public CacheController(IdentityProvider identityProvider, CacheManager cacheManager, CompressedTokenService compressedTokenService, ApplicationProperties applicationProperties) {
+	public CacheController(IdentityProvider identityProvider, CacheManager cacheManager, ApplicationProperties applicationProperties) {
 		this.identityProvider = identityProvider;
 		this.cacheManager = cacheManager;
-		this.compressedTokenService = compressedTokenService;
 		this.cookieName = applicationProperties.getCookieName();
 	}
 
@@ -53,20 +52,17 @@ public class CacheController {
 	private ResponseEntity<String> doClearCache(HttpServletResponse response, Cookie[] cookies) {
 		for (Cookie cookie : cookies) {
 			if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
-				// Decompress the token from the cookie
-				String compressedToken = cookie.getValue();
-				String accessToken = compressedTokenService.decompressToken(compressedToken);
+				// Get the opaque token from the cookie (no decompression needed)
+				String token = cookie.getValue();
 				
-				if (accessToken == null) {
-					LOGGER.error("Failed to decompress token from cookie");
-					cookie.setMaxAge(0);
-					cookie.setValue("");
-					cookie.setPath("/");
-					response.addCookie(cookie);
-					return new ResponseEntity<>("Failed to decompress token", HttpStatus.FORBIDDEN);
+				// Introspect the token to get user information
+				User user = null;
+				if (identityProvider instanceof KeyCloakIdentityProvider) {
+					user = ((KeyCloakIdentityProvider) identityProvider).introspectToken(token);
+				} else {
+					// Fallback to existing method for other identity providers
+					user = identityProvider.getUserByToken(token);
 				}
-				
-				User user = identityProvider.getUserByToken(accessToken);
 				if (user == null) {
 					LOGGER.error("4a19d36a-7cd1-4f25-be16-c7c19d63238e Failed to find user by token; invalidating cookie.");
 

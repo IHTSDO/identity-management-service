@@ -4,7 +4,7 @@ package org.snomed.ims.rest;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.snomed.ims.domain.User;
-import org.snomed.ims.service.CompressedTokenService;
+
 import org.springframework.test.web.servlet.ResultActions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,11 +48,10 @@ class AccountControllerTest extends IntegrationTest {
 	@Test
 	void getAccount_ShouldReturnExpected_WhenFailingToGetUser() {
 		// given
-		// Use the same CompressedTokenService instance that's in the controller
+		// Use a simple test token (no compression needed)
 		String testToken = "test-access-token";
-		String compressedToken = compressedTokenService.compressToken(testToken);
 		
-		Cookie cookie = new Cookie(applicationProperties.getCookieName(), compressedToken);
+		Cookie cookie = new Cookie(applicationProperties.getCookieName(), testToken);
 		givenGetUserByTokenThrowsException();
 
 		// when
@@ -69,11 +68,10 @@ class AccountControllerTest extends IntegrationTest {
 	@Test
 	void getAccount_ShouldReturnExpected_WhenSuccessfullyGettingUser() {
 		// given
-		// Use the same CompressedTokenService instance that's in the controller
+		// Use a simple test token (no compression needed)
 		String testToken = "test-access-token";
-		String compressedToken = compressedTokenService.compressToken(testToken);
 		
-		Cookie cookie = new Cookie(applicationProperties.getCookieName(), compressedToken);
+		Cookie cookie = new Cookie(applicationProperties.getCookieName(), testToken);
 		User user = new User();
 		user.setLogin("test-login");
 
@@ -107,11 +105,10 @@ class AccountControllerTest extends IntegrationTest {
 	@Test
 	void logout_ShouldReturnExpected_WhenGivenCookie() {
 		// given
-		// Use the same CompressedTokenService instance that's in the controller
+		// Use a simple test token (no compression needed)
 		String testToken = "test-access-token";
-		String compressedToken = compressedTokenService.compressToken(testToken);
 		
-		Cookie cookie = new Cookie(applicationProperties.getCookieName(), compressedToken);
+		Cookie cookie = new Cookie(applicationProperties.getCookieName(), testToken);
 
 		// when
 		ResultActions resultActions = post(POST_LOG_OUT, cookie);

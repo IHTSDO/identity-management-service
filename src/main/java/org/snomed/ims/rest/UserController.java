@@ -9,7 +9,7 @@ import org.snomed.ims.domain.User;
 import org.snomed.ims.domain.UserPasswordUpdateRequest;
 import org.snomed.ims.domain.UserInformationUpdateRequest;
 import org.snomed.ims.service.IdentityProvider;
-import org.snomed.ims.service.CompressedTokenService;
+import org.snomed.ims.service.KeyCloakIdentityProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -23,13 +23,12 @@ import java.util.List;
 public class UserController {
 
 	private final IdentityProvider identityProvider;
-	private final CompressedTokenService compressedTokenService;
+
 
 	private final String cookieName;
 
-	public UserController(IdentityProvider identityProvider, CompressedTokenService compressedTokenService, ApplicationProperties applicationProperties) {
+	public UserController(IdentityProvider identityProvider, ApplicationProperties applicationProperties) {
 		this.identityProvider = identityProvider;
-		this.compressedTokenService = compressedTokenService;
 		this.cookieName = applicationProperties.getCookieName();
 	}
 
@@ -65,9 +64,8 @@ public class UserController {
 			if (cookies != null) {
 				for (Cookie cookie : cookies) {
 					if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
-						// Decompress the token from the cookie
-						String compressedToken = cookie.getValue();
-						token = compressedTokenService.decompressToken(compressedToken);
+						// Get the opaque token from the cookie (no decompression needed)
+						token = cookie.getValue();
 						break;
 					}
 				}
@@ -108,20 +106,16 @@ public class UserController {
 			for (Cookie cookie : cookies) {
 				if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
 					try {
-						// Decompress the token from the cookie
-						String compressedToken = cookie.getValue();
-						String accessToken = compressedTokenService.decompressToken(compressedToken);
+						// Get the opaque token from the cookie (no decompression needed)
+						String token = cookie.getValue();
 						
-						if (accessToken == null) {
-							// Failed to decompress token, invalidate cookie
-							cookie.setMaxAge(0);
-							cookie.setValue("");
-							cookie.setPath("/");
-							response.addCookie(cookie);
-							return null;
+						// Introspect the token to get user information
+						if (identityProvider instanceof KeyCloakIdentityProvider) {
+							user = ((KeyCloakIdentityProvider) identityProvider).introspectToken(token);
+						} else {
+							// Fallback to existing method for other identity providers
+							user = identityProvider.getUserByToken(token);
 						}
-						
-						user = identityProvider.getUserByToken(accessToken);
 					} catch (RestClientException ex) {
 						// invalidate cookie
 						cookie.setMaxAge(0);

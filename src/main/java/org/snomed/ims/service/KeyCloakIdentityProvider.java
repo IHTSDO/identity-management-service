@@ -399,6 +399,110 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
 
 
 
+    /**
+     * Introspect an opaque token to get user information
+     * @param token the opaque token to introspect
+     * @return User object with user information, or null if token is invalid
+     */
+    public User introspectToken(String token) {
+        if (token == null || token.isEmpty()) {
+            return null;
+        }
+        
+        try {
+            MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+            form.add("token", token);
+            form.add(CLIENT_ID, this.keycloakClientId);
+            form.add(CLIENT_SECRET, this.keycloakClientSecrete);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+            HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(form, headers);
+
+            String introspectUrl = keycloakUrl + "/realms/" + this.keycloakRealms + "/protocol/openid-connect/token/introspect";
+            LOGGER.debug("Introspecting token at: {}", introspectUrl);
+            
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                    introspectUrl,
+                    HttpMethod.POST,
+                    requestEntity,
+                    new ParameterizedTypeReference<>() {}
+            );
+            
+            Map<String, Object> body = response.getBody();
+            if (body == null) {
+                LOGGER.warn("Token introspection response body is null");
+                return null;
+            }
+            
+            // Check if token is active
+            Boolean active = (Boolean) body.get("active");
+            if (active == null || !active) {
+                LOGGER.debug("Token is not active");
+                return null;
+            }
+            
+            // Extract user information from introspection response
+            String username = (String) body.get("preferred_username");
+            String email = (String) body.get("email");
+            String firstName = (String) body.get("given_name");
+            String lastName = (String) body.get("family_name");
+            
+            if (username == null || username.isEmpty()) {
+                LOGGER.warn("Token introspection response contains no username");
+                return null;
+            }
+            
+            // Create user object
+            User user = new User();
+            user.setLogin(username);
+            user.setEmail(email != null ? email : "");
+            user.setFirstName(firstName != null ? firstName : "");
+            user.setLastName(lastName != null ? lastName : "");
+            
+            // Extract roles from realm_access.roles or resource_access
+            List<String> roles = new ArrayList<>();
+            Object realmAccess = body.get("realm_access");
+            if (realmAccess instanceof Map) {
+                Object rolesObj = ((Map<?, ?>) realmAccess).get("roles");
+                if (rolesObj instanceof List) {
+                    for (Object role : (List<?>) rolesObj) {
+                        if (role instanceof String) {
+                            roles.add((String) role);
+                        }
+                    }
+                }
+            }
+            
+            // If no roles found in realm_access, try resource_access
+            if (roles.isEmpty()) {
+                Object resourceAccess = body.get("resource_access");
+                if (resourceAccess instanceof Map) {
+                    Object clientAccess = ((Map<?, ?>) resourceAccess).get(keycloakClientId);
+                    if (clientAccess instanceof Map) {
+                        Object clientRoles = ((Map<?, ?>) clientAccess).get("roles");
+                        if (clientRoles instanceof List) {
+                            for (Object role : (List<?>) clientRoles) {
+                                if (role instanceof String) {
+                                    roles.add((String) role);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            user.setRoles(roles);
+            
+            LOGGER.debug("Token introspection successful for user: {}", username);
+            return user;
+            
+        } catch (Exception e) {
+            LOGGER.error("Failed to introspect token", e);
+            return null;
+        }
+    }
+
     @Override
     public String exchangeCodeForAccessToken(String code, String redirectUri) {
         LOGGER.debug("Exchanging authorization code for access token");

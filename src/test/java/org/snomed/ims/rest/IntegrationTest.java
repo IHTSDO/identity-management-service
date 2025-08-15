@@ -5,7 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.snomed.ims.config.ApplicationProperties;
 import org.snomed.ims.service.IdentityProvider;
-import org.snomed.ims.service.CompressedTokenService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -27,7 +27,7 @@ import static org.mockito.Mockito.when;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class IntegrationTest {
 	protected IdentityProvider identityProvider = mock(IdentityProvider.class);
-	protected CompressedTokenService compressedTokenService;
+
 
 	@Autowired
 	protected ApplicationProperties applicationProperties;
@@ -36,17 +36,13 @@ class IntegrationTest {
 
 	@BeforeEach
 	void setUp() {
-		CompressedTokenService compressedTokenService = new CompressedTokenService();
-		AccountController accountController = new AccountController(identityProvider, compressedTokenService, applicationProperties);
-		AuthController authController = new AuthController(identityProvider, compressedTokenService, applicationProperties);
+		AccountController accountController = new AccountController(identityProvider, applicationProperties);
+		AuthController authController = new AuthController(identityProvider, applicationProperties);
 		VersionController versionController = new VersionController(applicationProperties);
 
 		this.mockMvc = MockMvcBuilders
 				.standaloneSetup(accountController, authController, versionController)
 				.build();
-		
-		// Store the service for tests to use
-		this.compressedTokenService = compressedTokenService;
 	}
 
 	@Test
