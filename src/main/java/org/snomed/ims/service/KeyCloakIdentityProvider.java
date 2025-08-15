@@ -400,8 +400,8 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
 
 
     /**
-     * Introspect an opaque token to get user information
-     * @param token the opaque token to introspect
+     * Introspect a lightweight JWT token to get user information
+     * @param token the lightweight JWT token to introspect
      * @return User object with user information, or null if token is invalid
      */
     public User introspectToken(String token) {
@@ -417,10 +417,11 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+            headers.set("Accept", "application/jwt"); // Request JWT claim in response
             HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(form, headers);
 
             String introspectUrl = keycloakUrl + "/realms/" + this.keycloakRealms + "/protocol/openid-connect/token/introspect";
-            LOGGER.debug("Introspecting token at: {}", introspectUrl);
+            LOGGER.debug("Introspecting lightweight JWT token at: {}", introspectUrl);
             
             ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
                     introspectUrl,
@@ -494,11 +495,11 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             
             user.setRoles(roles);
             
-            LOGGER.debug("Token introspection successful for user: {}", username);
+            LOGGER.debug("Lightweight JWT token introspection successful for user: {}", username);
             return user;
             
         } catch (Exception e) {
-            LOGGER.error("Failed to introspect token", e);
+            LOGGER.error("Failed to introspect lightweight JWT token", e);
             return null;
         }
     }
