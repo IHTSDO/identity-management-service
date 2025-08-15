@@ -505,9 +505,9 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
                         if (clientRoles instanceof List) {
                             for (Object role : (List<?>) clientRoles) {
                                 if (role instanceof String) {
-                                    // Add client-prefixed role for clarity
-                                    String fullRoleName = clientName + ":" + role;
-                                    roles.add(fullRoleName);
+                                    // Add ROLE_ prefixed role name
+                                    String roleName = "ROLE_" + role;
+                                    roles.add(roleName);
                                 }
                             }
                         }
