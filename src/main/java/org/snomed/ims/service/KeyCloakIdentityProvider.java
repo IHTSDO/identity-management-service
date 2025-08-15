@@ -464,13 +464,14 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             user.setFirstName(firstName != null ? firstName : "");
             user.setLastName(lastName != null ? lastName : "");
             
-            // Extract roles from realm_access.roles or resource_access
+            // Extract ALL roles from realm_access and resource_access
             List<String> roles = new ArrayList<>();
             
             // Log what we're looking for
             LOGGER.debug("Looking for roles in introspection response...");
             LOGGER.debug("Available keys in response: {}", body.keySet());
             
+            // 1. Extract realm-level roles
             Object realmAccess = body.get("realm_access");
             LOGGER.debug("realm_access: {}", realmAccess);
             if (realmAccess instanceof Map) {
@@ -485,21 +486,28 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
                 }
             }
             
-            // If no roles found in realm_access, try resource_access
-            if (roles.isEmpty()) {
-                LOGGER.debug("No roles found in realm_access, trying resource_access...");
-                Object resourceAccess = body.get("resource_access");
-                LOGGER.debug("resource_access: {}", resourceAccess);
-                if (resourceAccess instanceof Map) {
-                    Object clientAccess = ((Map<?, ?>) resourceAccess).get(keycloakClientId);
-                    LOGGER.debug("resource_access.{}: {}", keycloakClientId, clientAccess);
+            // 2. Extract ALL client-specific roles from resource_access
+            Object resourceAccess = body.get("resource_access");
+            LOGGER.debug("resource_access: {}", resourceAccess);
+            if (resourceAccess instanceof Map) {
+                Map<?, ?> resourceAccessMap = (Map<?, ?>) resourceAccess;
+                LOGGER.debug("Found {} client entries in resource_access", resourceAccessMap.size());
+                
+                for (Map.Entry<?, ?> entry : resourceAccessMap.entrySet()) {
+                    String clientName = entry.getKey().toString();
+                    Object clientAccess = entry.getValue();
+                    LOGGER.debug("Processing client: {}", clientName);
+                    
                     if (clientAccess instanceof Map) {
                         Object clientRoles = ((Map<?, ?>) clientAccess).get("roles");
-                        LOGGER.debug("resource_access.{}.roles: {}", keycloakClientId, clientRoles);
+                        LOGGER.debug("Client {} roles: {}", clientName, clientRoles);
+                        
                         if (clientRoles instanceof List) {
                             for (Object role : (List<?>) clientRoles) {
                                 if (role instanceof String) {
-                                    roles.add((String) role);
+                                    // Add client-prefixed role for clarity
+                                    String fullRoleName = clientName + ":" + role;
+                                    roles.add(fullRoleName);
                                 }
                             }
                         }
@@ -507,38 +515,31 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
                 }
             }
             
-            // Also check for roles directly in the response (some Keycloak versions put them here)
-            if (roles.isEmpty()) {
-                LOGGER.debug("No roles found in realm_access or resource_access, checking direct roles...");
-                Object directRoles = body.get("roles");
-                LOGGER.debug("Direct roles: {}", directRoles);
-                if (directRoles instanceof List) {
-                    for (Object role : (List<?>) directRoles) {
-                        if (role instanceof String) {
-                            roles.add((String) role);
-                        }
-                    }
-                }
-            }
-            
-            // Check for realm_access.roles (alternative path)
-            if (roles.isEmpty()) {
-                LOGGER.debug("No roles found in standard paths, checking realm_access.roles...");
-                if (realmAccess instanceof Map) {
-                    Object realmRoles = ((Map<?, ?>) realmAccess).get("roles");
-                    LOGGER.debug("realm_access.roles (alternative): {}", realmRoles);
-                    if (realmRoles instanceof List) {
-                        for (Object role : (List<?>) realmRoles) {
-                            if (role instanceof String) {
-                                roles.add((String) role);
-                            }
-                        }
+            // 3. Also check for roles directly in the response (some Keycloak versions put them here)
+            Object directRoles = body.get("roles");
+            LOGGER.debug("Direct roles: {}", directRoles);
+            if (directRoles instanceof List) {
+                for (Object role : (List<?>) directRoles) {
+                    if (role instanceof String) {
+                        roles.add((String) role);
                     }
                 }
             }
             
             LOGGER.debug("Final extracted roles: {}", roles);
             user.setRoles(roles);
+            
+            // Extract client access information
+            List<String> clientAccess = new ArrayList<>();
+            if (resourceAccess instanceof Map) {
+                Map<?, ?> resourceAccessMap = (Map<?, ?>) resourceAccess;
+                for (Map.Entry<?, ?> entry : resourceAccessMap.entrySet()) {
+                    String clientName = entry.getKey().toString();
+                    clientAccess.add(clientName);
+                }
+            }
+            LOGGER.debug("Client access: {}", clientAccess);
+            user.setClientAccess(clientAccess);
             
             LOGGER.debug("Lightweight JWT token introspection successful for user: {}", username);
             return user;

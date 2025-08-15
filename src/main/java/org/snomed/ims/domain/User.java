@@ -41,6 +41,8 @@ public class User implements Serializable {
 	private List<String> roles;
 
 	private List<String> appAudiences;
+	
+	private List<String> clientAccess;
 
 	public User() {
 	}
@@ -155,6 +157,14 @@ public class User implements Serializable {
 	public List<String> getAppAudiences() {
 		return appAudiences;
 	}
+	
+	public List<String> getClientAccess() {
+		return clientAccess;
+	}
+	
+	public void setClientAccess(List<String> clientAccess) {
+		this.clientAccess = clientAccess;
+	}
 
 	@Override
 	public boolean equals(Object o) {
@@ -179,6 +189,7 @@ public class User implements Serializable {
 				", displayName='" + displayName + '\'' +
 				", email='" + email + '\'' +
 				", roles=" + roles +
+				", clientAccess=" + clientAccess +
 				'}';
 	}
 }
