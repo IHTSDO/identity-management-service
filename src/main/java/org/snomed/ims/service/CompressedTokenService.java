@@ -12,6 +12,7 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.zip.GZIPInputStream;
@@ -32,7 +33,7 @@ public class CompressedTokenService {
     private static final int GCM_IV_LENGTH = 8; // Reduced from 12 for smaller size
     private static final int GCM_TAG_LENGTH = 16;
     
-    @Value("${token.encryption.key:default-encryption-key-change-in-production}")
+    @Value("${token.encryption.key:${TOKEN_ENCRYPTION_KEY:${systemProperties['token.encryption.key']:default-encryption-key-change-in-production}}}")
     private String encryptionKeyString;
     
     private SecretKey secretKey;
@@ -47,10 +48,15 @@ public class CompressedTokenService {
                 // Use configured key or fallback to a default for testing
                 String keyToUse = (encryptionKeyString != null) ? encryptionKeyString : "default-test-key-for-development";
                 
-                // Generate a deterministic key from the string
-                KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-                keyGen.init(KEY_SIZE, new SecureRandom(keyToUse.getBytes(StandardCharsets.UTF_8)));
-                secretKey = keyGen.generateKey();
+                // Generate a deterministic key using SHA-256 hash of the string
+                MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                byte[] hash = digest.digest(keyToUse.getBytes(StandardCharsets.UTF_8));
+                
+                // Take the first 16 bytes (128 bits) for AES-128
+                byte[] keyBytes = new byte[16];
+                System.arraycopy(hash, 0, keyBytes, 0, 16);
+                
+                secretKey = new SecretKeySpec(keyBytes, "AES");
                 LOGGER.debug("Encryption key initialized successfully");
             } catch (Exception e) {
                 LOGGER.error("Failed to initialize encryption key", e);
