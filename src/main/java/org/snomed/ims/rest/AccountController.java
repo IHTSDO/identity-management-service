@@ -12,7 +12,7 @@ import org.snomed.ims.config.ApplicationProperties;
 import org.snomed.ims.domain.AuthenticationResponse;
 import org.snomed.ims.domain.User;
 import org.snomed.ims.service.IdentityProvider;
-import org.snomed.ims.service.CompressedTokenService;
+import org.snomed.ims.service.KeyCloakIdentityProvider;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -34,7 +34,7 @@ public class AccountController {
     private static final String AUTH_HEADER_USERNAME = AUTH_HEADER_PREFIX + "username";
 
     	private final IdentityProvider identityProvider;
-	private final CompressedTokenService compressedTokenService;
+
 
 	private final String cookieName;
 	private final Integer cookieMaxAge;
@@ -42,9 +42,8 @@ public class AccountController {
 	private final boolean cookieSecureFlag;
 
 
-	public AccountController(IdentityProvider identityProvider, CompressedTokenService compressedTokenService, ApplicationProperties applicationProperties) {
+	public AccountController(IdentityProvider identityProvider, ApplicationProperties applicationProperties) {
 		this.identityProvider = identityProvider;
-		this.compressedTokenService = compressedTokenService;
 		this.cookieName = applicationProperties.getCookieName();
 		this.cookieMaxAge = applicationProperties.getCookieMaxAgeInt();
 		this.cookieDomain = applicationProperties.getCookieDomain();
@@ -68,17 +67,10 @@ public class AccountController {
 				if (isCookieValid(cookie)) {
 					if (StringUtils.isNotEmpty(cookie.getValue())) {
 						try {
-							// Decompress and decrypt the token before invalidating it
-							String compressedToken = cookie.getValue();
-							String accessToken = compressedTokenService.decompressToken(compressedToken);
-							
-							if (accessToken != null) {
-								// Invalidate the actual access token with Keycloak
-								identityProvider.invalidateToken(accessToken);
-								LOGGER.debug("Successfully invalidated token with identity provider");
-							} else {
-								LOGGER.warn("Failed to decompress token during logout, but continuing with cookie cleanup");
-							}
+							// Invalidate the opaque token with Keycloak
+							String token = cookie.getValue();
+							identityProvider.invalidateToken(token);
+							LOGGER.debug("Successfully invalidated token with identity provider");
 						} catch (Exception e) {
 							LOGGER.error("Error during token invalidation, but continuing with cookie cleanup", e);
 						}
@@ -105,21 +97,17 @@ public class AccountController {
 			for (Cookie cookie : cookies) {
 				if (isCookieValid(cookie)) {
 					try {
-						// Decompress the token from the cookie
-						String compressedToken = cookie.getValue();
-						String accessToken = compressedTokenService.decompressToken(compressedToken);
+						// Get the opaque token from the cookie (no decompression needed)
+						String token = cookie.getValue();
 						
-						if (accessToken == null) {
-							LOGGER.error("Failed to decompress token from cookie");
-							cookie.setMaxAge(0);
-							cookie.setValue("");
-							cookie.setPath("/");
-							response.addCookie(cookie);
-							return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-									.body(AuthenticationResponse.unauthenticated(buildLoginUrl(request)));
+						// Introspect the token to get user information
+						User user = null;
+						if (identityProvider instanceof KeyCloakIdentityProvider) {
+							user = ((KeyCloakIdentityProvider) identityProvider).introspectToken(token);
+						} else {
+							// Fallback to existing method for other identity providers
+							user = identityProvider.getUserByToken(token);
 						}
-						
-						User user = identityProvider.getUserByToken(accessToken);
 						if (user == null) {
 							LOGGER.error("60037224-9b55-4f37-b944-eb4c1abc8fd9 Failed to get user; invalidating cookie");
 

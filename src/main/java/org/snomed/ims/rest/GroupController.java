@@ -7,7 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.snomed.ims.config.ApplicationProperties;
 import org.snomed.ims.domain.User;
 import org.snomed.ims.service.IdentityProvider;
-import org.snomed.ims.service.CompressedTokenService;
+import org.snomed.ims.service.KeyCloakIdentityProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -20,13 +20,12 @@ import java.util.List;
 @Tag(name = "GroupController")
 public class GroupController {
 	private final IdentityProvider identityProvider;
-	private final CompressedTokenService compressedTokenService;
+
 
 	private final String cookieName;
 
-	public GroupController(IdentityProvider identityProvider, CompressedTokenService compressedTokenService, ApplicationProperties applicationProperties) {
+	public GroupController(IdentityProvider identityProvider, ApplicationProperties applicationProperties) {
 		this.identityProvider = identityProvider;
-		this.compressedTokenService = compressedTokenService;
 		this.cookieName = applicationProperties.getCookieName();
 	}
 
@@ -51,20 +50,16 @@ public class GroupController {
 			for (Cookie cookie : cookies) {
 				if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
 					try {
-						// Decompress the token from the cookie
-						String compressedToken = cookie.getValue();
-						String accessToken = compressedTokenService.decompressToken(compressedToken);
+						// Get the opaque token from the cookie (no decompression needed)
+						String token = cookie.getValue();
 						
-						if (accessToken == null) {
-							// Failed to decompress token, invalidate cookie
-							cookie.setMaxAge(0);
-							cookie.setValue("");
-							cookie.setPath("/");
-							response.addCookie(cookie);
-							return null;
+						// Introspect the token to get user information
+						if (identityProvider instanceof KeyCloakIdentityProvider) {
+							user = ((KeyCloakIdentityProvider) identityProvider).introspectToken(token);
+						} else {
+							// Fallback to existing method for other identity providers
+							user = identityProvider.getUserByToken(token);
 						}
-						
-						user = identityProvider.getUserByToken(accessToken);
 					} catch (RestClientException ex) {
 						// invalidate cookie
 						cookie.setMaxAge(0);
