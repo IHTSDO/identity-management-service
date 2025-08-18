@@ -211,9 +211,13 @@ public class AccountController {
     private String buildLoginUrl(HttpServletRequest request) {
         // Redirect to frontend home page instead of current API endpoint
         String returnTo = URLEncoder.encode("/#/home", StandardCharsets.UTF_8);
+
+        String serviceReferer = request.getParameter("serviceReferer");
+        LOGGER.debug("serviceReferer: {}", serviceReferer);
+
         // Don't add /api prefix if context path already includes it
         String authPath = request.getContextPath().endsWith("/api") ? "/auth/login" : "/api/auth/login";
-        return request.getContextPath() + authPath + "?returnTo=" + returnTo;
+        return request.getContextPath() + authPath + "?returnTo=" + returnTo + (StringUtils.isEmpty(serviceReferer) ? "" : URLEncoder.encode("?serviceReferer=" + serviceReferer, StandardCharsets.UTF_8));
     }
 
     private String buildCurrentUrl(HttpServletRequest request) {
