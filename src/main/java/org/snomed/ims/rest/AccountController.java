@@ -13,7 +13,6 @@ import org.snomed.ims.domain.AuthenticationResponse;
 import org.snomed.ims.domain.User;
 import org.snomed.ims.service.IdentityProvider;
 import org.snomed.ims.service.KeyCloakIdentityProvider;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +21,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
@@ -62,28 +60,28 @@ public class AccountController {
 		}
 
 		Cookie[] cookies = request.getCookies();
-		if (cookies != null) {
-			for (Cookie cookie : cookies) {
-				if (isCookieValid(cookie)) {
-					if (StringUtils.isNotEmpty(cookie.getValue())) {
-						try {
-							// Invalidate the opaque token with Keycloak
-							String token = cookie.getValue();
-							identityProvider.invalidateToken(token);
-							LOGGER.debug("Successfully invalidated token with identity provider");
-						} catch (Exception e) {
-							LOGGER.error("Error during token invalidation, but continuing with cookie cleanup", e);
-						}
-					}
+        if (cookies == null) return;
 
-					// invalidate cookie
-					cookie.setMaxAge(0);
-					cookie.setValue("");
-					cookie.setPath("/");
-					response.addCookie(cookie);
-				}
-			}
-		}
+        for (Cookie cookie : cookies) {
+            if (isCookieValid(cookie)) {
+                if (StringUtils.isNotEmpty(cookie.getValue())) {
+                    try {
+                        // Invalidate the opaque token with Keycloak
+                        String token = cookie.getValue();
+                        identityProvider.invalidateToken(token);
+                        LOGGER.debug("Successfully invalidated token with identity provider");
+                    } catch (Exception e) {
+                        LOGGER.error("Error during token invalidation, but continuing with cookie cleanup", e);
+                    }
+                }
+
+                // invalidate cookie
+                cookie.setMaxAge(0);
+                cookie.setValue("");
+                cookie.setPath("/");
+                response.addCookie(cookie);
+            }
+        }
 	}
 
 	/**
@@ -99,16 +97,8 @@ public class AccountController {
 					try {
 						// Get the opaque token from the cookie (no decompression needed)
 						String token = cookie.getValue();
-						
-						// Introspect the token to get user information
-						User user = null;
-						if (identityProvider instanceof KeyCloakIdentityProvider) {
-							user = ((KeyCloakIdentityProvider) identityProvider).introspectToken(token);
-						} else {
-							// Fallback to existing method for other identity providers
-							user = identityProvider.getUserByToken(token);
-						}
-						if (user == null) {
+                        User user = getUserFromToken(token);
+                        if (user == null) {
 							LOGGER.error("60037224-9b55-4f37-b944-eb4c1abc8fd9 Failed to get user; invalidating cookie");
 
 							cookie.setMaxAge(0);
@@ -146,6 +136,18 @@ public class AccountController {
 
         // No IMS cookie. Handle OIDC passive check via prompt=none
         return getAccountForRequestWithoutCookie(request, response);
+    }
+
+    private User getUserFromToken(String token) {
+        User user;
+        // Introspect the token to get user information
+        if (identityProvider instanceof KeyCloakIdentityProvider keyCloakIdentityProvider) {
+            user = keyCloakIdentityProvider.introspectToken(token);
+        } else {
+            // Fallback to existing method for other identity providers
+            user = identityProvider.getUserByToken(token);
+        }
+        return user;
     }
 
     private boolean isCookieValid(Cookie cookie) {
@@ -218,30 +220,6 @@ public class AccountController {
         // Don't add /api prefix if context path already includes it
         String authPath = request.getContextPath().endsWith("/api") ? "/auth/login" : "/api/auth/login";
         return request.getContextPath() + authPath + "?returnTo=" + returnTo + (StringUtils.isEmpty(serviceReferer) ? "" : URLEncoder.encode("?serviceReferer=" + serviceReferer, StandardCharsets.UTF_8));
-    }
-
-    private String buildCurrentUrl(HttpServletRequest request) {
-        // Build absolute URL to current endpoint (without query params)
-        String scheme = request.getHeader("X-Forwarded-Proto");
-        if (scheme == null || scheme.isEmpty()) {
-            scheme = request.getScheme();
-        }
-        String host = request.getHeader("X-Forwarded-Host");
-        if (host == null || host.isEmpty()) {
-            host = request.getHeader("Host");
-        }
-        // Fallbacks when Host headers are missing (e.g., during tests)
-        if (host == null || host.isEmpty()) {
-            host = request.getServerName();
-            int port = request.getServerPort();
-            boolean isDefaultPort = ("http".equalsIgnoreCase(scheme) && port == 80)
-                    || ("https".equalsIgnoreCase(scheme) && port == 443);
-            if (!isDefaultPort && port > 0) {
-                host = host + ":" + port;
-            }
-        }
-        String requestUri = request.getRequestURI();
-        return scheme + "://" + host + requestUri;
     }
 
     private String buildRedirectUri(HttpServletRequest request) {

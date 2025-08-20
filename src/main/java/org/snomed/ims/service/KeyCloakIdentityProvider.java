@@ -479,8 +479,8 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
                 LOGGER.debug("realm_access.roles: {}", rolesObj);
                 if (rolesObj instanceof List) {
                     for (Object role : (List<?>) rolesObj) {
-                        if (role instanceof String) {
-                            roles.add((String) role);
+                        if (role instanceof String s) {
+                            roles.add(AuthoritiesConstants.ROLE_PREFIX + s);
                         }
                     }
                 }
@@ -506,7 +506,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
                             for (Object role : (List<?>) clientRoles) {
                                 if (role instanceof String) {
                                     // Add ROLE_ prefixed role name
-                                    String roleName = "ROLE_" + role;
+                                    String roleName = AuthoritiesConstants.ROLE_PREFIX + role;
                                     roles.add(roleName);
                                 }
                             }
@@ -520,8 +520,8 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             LOGGER.debug("Direct roles: {}", directRoles);
             if (directRoles instanceof List) {
                 for (Object role : (List<?>) directRoles) {
-                    if (role instanceof String) {
-                        roles.add((String) role);
+                    if (role instanceof String s) {
+                        roles.add(AuthoritiesConstants.ROLE_PREFIX + s);
                     }
                 }
             }
