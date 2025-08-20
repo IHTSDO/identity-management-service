@@ -40,8 +40,6 @@ public class User implements Serializable {
 
 	private List<String> roles;
 
-	private List<String> appAudiences;
-	
 	private List<String> clientAccess;
 
 	public User() {
@@ -150,14 +148,6 @@ public class User implements Serializable {
 		this.roles = roles;
 	}
 
-	public void setAppAudiences(List<String> appAudiences) {
-		this.appAudiences = appAudiences;
-	}
-
-	public List<String> getAppAudiences() {
-		return appAudiences;
-	}
-	
 	public List<String> getClientAccess() {
 		return clientAccess;
 	}

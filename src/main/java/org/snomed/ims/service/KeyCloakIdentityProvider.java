@@ -1,6 +1,5 @@
 package org.snomed.ims.service;
 
-import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.ims.domain.User;
@@ -30,6 +29,13 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
     private static final String USERS = "/users/";
     public static final String CLIENT_ID = "client_id";
     public static final String CLIENT_SECRET = "client_secret";
+    public static final String GRANT_TYPE = "grant_type";
+    public static final String SCOPE = "scope";
+    public static final String ACCESS_TOKEN = "access_token";
+    public static final String TOKEN = "token";
+    public static final String ROLES = "roles";
+    public static final String OPENID_PROFILE_EMAIL = "openid profile email";
+    public static final String PROTOCOL_OPENID_CONNECT_TOKEN = "/protocol/openid-connect/token";
 
     private final RestTemplate restTemplate;
 
@@ -98,8 +104,8 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         }
         try {
             MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
-            map.add("grant_type", "password");
-            map.add("scope", "openid");
+            map.add(GRANT_TYPE, "password");
+            map.add(SCOPE, "openid");
             map.add(CLIENT_ID, this.keycloakClientId);
             map.add(CLIENT_SECRET, this.keycloakClientSecrete);
             map.add(USERNAME, username);
@@ -109,11 +115,11 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
             HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
 
-            Map<String, String> response = restTemplate.postForObject(REALMS + this.keycloakRealms + "/protocol/openid-connect/token", request, HashMap.class);
+            Map<String, String> response = restTemplate.postForObject(REALMS + this.keycloakRealms + PROTOCOL_OPENID_CONNECT_TOKEN, request, HashMap.class);
             if (response == null) {
                 return null;
             }
-            return response.getOrDefault("access_token", "");
+            return response.getOrDefault(ACCESS_TOKEN, "");
         } catch (Exception e) {
             LOGGER.error("ed680e99-d64b-4852-8006-7b7481890590 Failed to authenticate", e);
             return null;
@@ -151,45 +157,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         if (token == null || token.isEmpty()) {
             return null;
         }
-        try {
-            MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-            body.add(CLIENT_ID, this.keycloakClientId);
-            body.add(CLIENT_SECRET, this.keycloakClientSecrete);
-            body.add("token", token);
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
-
-            ResponseEntity<HashMap> response = restTemplate.exchange(
-                    REALMS + this.keycloakRealms + "/protocol/openid-connect/token/introspect",
-                    HttpMethod.POST,
-                    request,
-                    HashMap.class
-            );
-
-            Map map = response.getBody();
-            if (map == null) return null;
-
-            boolean active = Boolean.parseBoolean(map.get("active").toString());
-            if (!active) return null;
-
-            User user = new User();
-            user.setId(map.get("sub").toString());
-            user.setLogin(map.get("username").toString());
-            user.setLastName(map.get("family_name").toString());
-            user.setFirstName(map.get("given_name").toString());
-            user.setDisplayName(map.get("name").toString());
-            user.setEmail(map.get("email").toString());
-            user.setAppAudiences((ArrayList) map.get("aud"));
-            user.setActive(true);
-            setRoleToUser(user, map);
-
-            return user;
-        } catch (Exception e) {
-            LOGGER.error("fdec3996-b2ef-4811-8e5a-86df6c2bbc25 Failed to get user by token", e);
-            return null;
-        }
+        return introspectToken(token);
     }
 
     @Override
@@ -276,7 +244,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             String userGroupsUrl = ADMIN_REALMS + this.keycloakRealms + USERS + currentUserId + "/groups";
             String fullUserGroupsUrl = keycloakUrl + userGroupsUrl;
             LOGGER.debug("Making request to get user groups from: {}", fullUserGroupsUrl);
-            LOGGER.debug("Request headers: Authorization=Bearer ***{}", adminToken.substring(Math.max(0, adminToken.length() - 8)));
+            LOGGER.debug("Request headers: Authorization=Bearer ***{}", adminToken.length() > 8 ? adminToken.substring(Math.max(0, adminToken.length() - 8)) : adminToken);
             
             ResponseEntity<List<KeyCloakGroup>> groupResponse = restTemplate.exchange(
                     fullUserGroupsUrl,
@@ -325,7 +293,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         }
         try {
             MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
-            map.add("token", token);
+            map.add(TOKEN, token);
             map.add(CLIENT_ID, this.keycloakClientId);
             map.add(CLIENT_SECRET, this.keycloakClientSecrete);
 
@@ -344,7 +312,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
     @CacheEvict(value = "accountCache", key = "#token")
     public User updateUser(User user, UserInformationUpdateRequest request, String token) {
         Map<String, String> updatedFields = new HashMap<>();
-        updatedFields.put("email", user.getEmail());
+        updatedFields.put(EMAIL, user.getEmail());
         if (request.firstName() != null) {
             updatedFields.put("firstName", request.firstName());
         }
@@ -381,13 +349,13 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         
         StringBuilder url = new StringBuilder();
         url.append(keycloakUrl)
-                .append("/realms/")
+                .append(REALMS)
                 .append(keycloakRealms)
                 .append("/protocol/openid-connect/auth")
                 .append("?client_id=").append(URLEncoder.encode(keycloakClientId, StandardCharsets.UTF_8))
                 .append("&redirect_uri=").append(URLEncoder.encode(redirectUri, StandardCharsets.UTF_8))
                 .append("&response_type=code")
-                .append("&scope=").append(URLEncoder.encode("openid profile email", StandardCharsets.UTF_8));
+                .append("&scope=").append(URLEncoder.encode(OPENID_PROFILE_EMAIL, StandardCharsets.UTF_8));
         if (promptNone) {
             url.append("&prompt=none");
         }
@@ -411,7 +379,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         
         try {
             MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
-            form.add("token", token);
+            form.add(TOKEN, token);
             form.add(CLIENT_ID, this.keycloakClientId);
             form.add(CLIENT_SECRET, this.keycloakClientSecrete);
 
@@ -420,7 +388,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             headers.set("Accept", "application/jwt"); // Request JWT claim in response
             HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(form, headers);
 
-            String introspectUrl = keycloakUrl + "/realms/" + this.keycloakRealms + "/protocol/openid-connect/token/introspect";
+            String introspectUrl = keycloakUrl + REALMS + this.keycloakRealms + "/protocol/openid-connect/token/introspect";
             LOGGER.debug("Introspecting lightweight JWT token at: {}", introspectUrl);
             
             ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
@@ -464,83 +432,22 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             user.setFirstName(firstName != null ? firstName : "");
             user.setLastName(lastName != null ? lastName : "");
             
-            // Extract ALL roles from realm_access and resource_access
-            List<String> roles = new ArrayList<>();
-            
             // Log what we're looking for
             LOGGER.debug("Looking for roles in introspection response...");
             LOGGER.debug("Available keys in response: {}", body.keySet());
-            
-            // 1. Extract realm-level roles
+
             Object realmAccess = body.get("realm_access");
             LOGGER.debug("realm_access: {}", realmAccess);
-            if (realmAccess instanceof Map) {
-                Object rolesObj = ((Map<?, ?>) realmAccess).get("roles");
-                LOGGER.debug("realm_access.roles: {}", rolesObj);
-                if (rolesObj instanceof List) {
-                    for (Object role : (List<?>) rolesObj) {
-                        if (role instanceof String s) {
-                            roles.add(AuthoritiesConstants.ROLE_PREFIX + s);
-                        }
-                    }
-                }
-            }
-            
-            // 2. Extract ALL client-specific roles from resource_access
+
             Object resourceAccess = body.get("resource_access");
             LOGGER.debug("resource_access: {}", resourceAccess);
-            if (resourceAccess instanceof Map) {
-                Map<?, ?> resourceAccessMap = (Map<?, ?>) resourceAccess;
-                LOGGER.debug("Found {} client entries in resource_access", resourceAccessMap.size());
-                
-                for (Map.Entry<?, ?> entry : resourceAccessMap.entrySet()) {
-                    String clientName = entry.getKey().toString();
-                    Object clientAccess = entry.getValue();
-                    LOGGER.debug("Processing client: {}", clientName);
-                    
-                    if (clientAccess instanceof Map) {
-                        Object clientRoles = ((Map<?, ?>) clientAccess).get("roles");
-                        LOGGER.debug("Client {} roles: {}", clientName, clientRoles);
-                        
-                        if (clientRoles instanceof List) {
-                            for (Object role : (List<?>) clientRoles) {
-                                if (role instanceof String) {
-                                    // Add ROLE_ prefixed role name
-                                    String roleName = AuthoritiesConstants.ROLE_PREFIX + role;
-                                    roles.add(roleName);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            
-            // 3. Also check for roles directly in the response (some Keycloak versions put them here)
-            Object directRoles = body.get("roles");
+
+            Object directRoles = body.get(ROLES);
             LOGGER.debug("Direct roles: {}", directRoles);
-            if (directRoles instanceof List) {
-                for (Object role : (List<?>) directRoles) {
-                    if (role instanceof String s) {
-                        roles.add(AuthoritiesConstants.ROLE_PREFIX + s);
-                    }
-                }
-            }
-            
-            LOGGER.debug("Final extracted roles: {}", roles);
-            user.setRoles(roles);
-            
-            // Extract client access information
-            List<String> clientAccess = new ArrayList<>();
-            if (resourceAccess instanceof Map) {
-                Map<?, ?> resourceAccessMap = (Map<?, ?>) resourceAccess;
-                for (Map.Entry<?, ?> entry : resourceAccessMap.entrySet()) {
-                    String clientName = entry.getKey().toString();
-                    clientAccess.add(clientName);
-                }
-            }
-            LOGGER.debug("Client access: {}", clientAccess);
-            user.setClientAccess(clientAccess);
-            
+
+            extractRoles(realmAccess, resourceAccess, directRoles, user);
+            extractClientAccess(resourceAccess, user);
+
             LOGGER.debug("Lightweight JWT token introspection successful for user: {}", username);
             return user;
             
@@ -553,17 +460,17 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
     @Override
     public String exchangeCodeForAccessToken(String code, String redirectUri) {
         LOGGER.debug("Exchanging authorization code for access token");
-        LOGGER.debug("  - Code: {}...{}", code.substring(0, Math.min(8, code.length())), 
-            code.substring(Math.max(0, code.length() - 8)));
+        LOGGER.debug("  - Code: {}...{}", code != null ? code.substring(0, Math.min(8, code.length())) : "",
+                code != null ? code.substring(Math.max(0, code.length() - 8)) : "");
         LOGGER.debug("  - Redirect URI: {}", redirectUri);
         LOGGER.debug("  - Client ID: {}", keycloakClientId);
         LOGGER.debug("  - Client Secret: {}", keycloakClientSecrete != null ? "***" : "null");
         
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
-        form.add("grant_type", "authorization_code");
+        form.add(GRANT_TYPE, "authorization_code");
         form.add("code", code);
         form.add("redirect_uri", redirectUri);
-        form.add("scope", "openid profile email"); // Add scope for roles and user info
+        form.add(SCOPE, OPENID_PROFILE_EMAIL); // Add scope for roles and user info
         form.add(CLIENT_ID, keycloakClientId);
         form.add(CLIENT_SECRET, keycloakClientSecrete);
 
@@ -572,13 +479,13 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(form, headers);
 
         // Build the token exchange URL
-        String tokenUrl = keycloakUrl + "/realms/" + this.keycloakRealms + "/protocol/openid-connect/token";
+        String tokenUrl = keycloakUrl + REALMS + this.keycloakRealms + PROTOCOL_OPENID_CONNECT_TOKEN;
         LOGGER.debug("Making token exchange request to: {}", tokenUrl);
         LOGGER.debug("Request headers: {}", headers);
         LOGGER.debug("Request body parameters:");
         LOGGER.debug("  - grant_type: authorization_code");
-        LOGGER.debug("  - code: {}...{}", code.substring(0, Math.min(8, code.length())), 
-            code.substring(Math.max(0, code.length() - 8)));
+        LOGGER.debug("  - code: {}...{}", code != null ? code.substring(0, Math.min(8, code.length())) : "",
+                code != null ? code.substring(Math.max(0, code.length() - 8)) : "");
         LOGGER.debug("  - scope: openid profile email");
         LOGGER.debug("  - redirect_uri: {}", redirectUri);
         LOGGER.debug("  - client_id: {}", keycloakClientId);
@@ -602,7 +509,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             }
             
             LOGGER.debug("Token exchange response body keys: {}", body.keySet());
-            Object accessToken = body.get("access_token");
+            Object accessToken = body.get(ACCESS_TOKEN);
             
             if (accessToken == null) {
                 LOGGER.warn("Token exchange response contains no access_token");
@@ -643,8 +550,8 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             LOGGER.debug("Attempting to authenticate admin client with ID: {}", username);
             
             MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
-            map.add("grant_type", "client_credentials");
-            map.add("scope", "openid profile email");
+            map.add(GRANT_TYPE, "client_credentials");
+            map.add(SCOPE, OPENID_PROFILE_EMAIL);
             map.add(CLIENT_ID, username); // Use username as client_id for admin client
             map.add(CLIENT_SECRET, password); // Use password as client_secret for admin client
 
@@ -653,11 +560,11 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
 
             // Build the full URL for admin client authentication
-            String tokenUrl = keycloakUrl + REALMS + this.keycloakRealms + "/protocol/openid-connect/token";
+            String tokenUrl = keycloakUrl + REALMS + this.keycloakRealms + PROTOCOL_OPENID_CONNECT_TOKEN;
             LOGGER.debug("Making admin client authentication request to: {}", tokenUrl);
             LOGGER.debug("Request headers: {}", headers);
             LOGGER.debug("Request body parameters: grant_type={}, scope={}, client_id={}, client_secret={}", 
-                "client_credentials", "openid profile email", username, "***");
+                "client_credentials", OPENID_PROFILE_EMAIL, username, "***");
 
             Map<String, String> response = restTemplate.postForObject(tokenUrl, request, HashMap.class);
             
@@ -666,7 +573,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
                 return null;
             }
             
-            String accessToken = response.getOrDefault("access_token", "");
+            String accessToken = response.getOrDefault(ACCESS_TOKEN, "");
             if (accessToken.isEmpty()) {
                 LOGGER.warn("Admin client authentication response contains no access_token. Response keys: {}", 
                     response.keySet());
@@ -678,7 +585,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             return accessToken;
         } catch (Exception e) {
             LOGGER.error("Failed to authenticate as admin client. URL: {}, Client ID: {}, Error: {}", 
-                keycloakUrl + REALMS + this.keycloakRealms + "/protocol/openid-connect/token",
+                keycloakUrl + REALMS + this.keycloakRealms + PROTOCOL_OPENID_CONNECT_TOKEN,
                 username, e.getMessage(), e);
             return null;
         }
@@ -696,17 +603,6 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         user.setActive(keyCloakUser.isEnabled());
 
         return user;
-    }
-
-    private void setRoleToUser(User user, Map map) {
-        user.setRoles(new ArrayList<>());
-        Map<String, Object> resourceAccess = (HashMap) map.get("resource_access");
-        for (Map.Entry<String, Object> entry : resourceAccess.entrySet()) {
-            List<Object> roles = (List<Object>) ((HashMap) entry.getValue()).get("roles");
-            for (Object role : roles) {
-                user.getRoles().add(AuthoritiesConstants.ROLE_PREFIX + role.toString());
-            }
-        }
     }
 
     private List<User> getUsersForGroup(final String groupName, final String username, List<KeyCloakGroup> keyCloakGroups, HttpEntity<String> requestEntity) {
@@ -748,5 +644,78 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
                                 return user;
                             });
                 }).distinct().toList();
+    }
+
+    private void extractClientAccess(Object resourceAccess, User user) {
+        // Extract client access information
+        List<String> clientAccess = new ArrayList<>();
+        if (resourceAccess instanceof Map) {
+            Map<?, ?> resourceAccessMap = (Map<?, ?>) resourceAccess;
+            for (Map.Entry<?, ?> entry : resourceAccessMap.entrySet()) {
+                String clientName = entry.getKey().toString();
+                clientAccess.add(clientName);
+            }
+        }
+        LOGGER.debug("Client access: {}", clientAccess);
+        user.setClientAccess(clientAccess);
+    }
+
+    private void extractRoles(Object realmAccess, Object resourceAccess, Object directRoles, User user) {
+        // Extract ALL roles from realm_access and resource_access
+        List<String> roles = new ArrayList<>();
+
+        extractRolesFromRealmAccess(realmAccess, roles);
+        extractRolesFromResourceAccess(resourceAccess, roles);
+        extractDirectRoles(directRoles, roles);
+
+        LOGGER.debug("Final extracted roles: {}", roles);
+        user.setRoles(roles);
+    }
+
+    private void extractDirectRoles(Object directRoles, List<String> roles) {
+        // 3. Also check for roles directly in the response (some Keycloak versions put them here)
+        if (directRoles instanceof List) {
+            for (Object role : (List<?>) directRoles) {
+                if (role instanceof String s) {
+                    roles.add(AuthoritiesConstants.ROLE_PREFIX + s);
+                }
+            }
+        }
+    }
+
+    private void extractRolesFromResourceAccess(Object resourceAccess, List<String> roles) {
+        // 2. Extract ALL client-specific roles from resource_access
+        if (!(resourceAccess instanceof Map)) return;
+        Map<?, ?> resourceAccessMap = (Map<?, ?>) resourceAccess;
+        LOGGER.debug("Found {} client entries in resource_access", resourceAccessMap.size());
+
+        for (Map.Entry<?, ?> entry : resourceAccessMap.entrySet()) {
+            String clientName = entry.getKey().toString();
+            Object clientAccess = entry.getValue();
+            LOGGER.debug("Processing client: {}", clientName);
+
+            if (!(clientAccess instanceof Map)) continue;
+            Object clientRoles = ((Map<?, ?>) clientAccess).get(ROLES);
+            LOGGER.debug("Client {} roles: {}", clientName, clientRoles);
+
+            if (clientRoles instanceof List) {
+                for (Object role : (List<?>) clientRoles) {
+                    if (role instanceof String) {
+                        // Add ROLE_ prefixed role name
+                        String roleName = AuthoritiesConstants.ROLE_PREFIX + role;
+                        roles.add(roleName);
+                    }
+                }
+            }
+        }
+    }
+
+    private void extractRolesFromRealmAccess(Object realmAccess, List<String> roles) {
+        // 1. Extract realm-level roles
+        if (realmAccess instanceof Map) {
+            Object rolesObj = ((Map<?, ?>) realmAccess).get(ROLES);
+            LOGGER.debug("realm_access.roles: {}", rolesObj);
+            extractDirectRoles(rolesObj, roles);
+        }
     }
 }
