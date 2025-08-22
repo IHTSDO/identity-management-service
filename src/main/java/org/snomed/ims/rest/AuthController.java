@@ -142,12 +142,11 @@ public class AuthController {
 			imsCookie.setDomain(cookieDomain);
 			imsCookie.setSecure(cookieSecureFlag);
 			imsCookie.setPath("/");
-			imsCookie.setHttpOnly(true);
 			imsCookie.setAttribute("SameSite", "Lax");
 			response.addCookie(imsCookie);
 			
-			LOGGER.debug("Set IMS session cookie: name={}, domain={}, secure={}, httpOnly={}, tokenLength={}", 
-			    cookieName, cookieDomain, cookieSecureFlag, true, accessToken.length());
+			LOGGER.debug("Set IMS session cookie: name={}, domain={}, secure={}, tokenLength={}", 
+			    cookieName, cookieDomain, cookieSecureFlag, accessToken.length());
 			
 			// Extract returnTo from state parameter and decode it
 			String returnTo = "/#/home"; // Default to frontend home
