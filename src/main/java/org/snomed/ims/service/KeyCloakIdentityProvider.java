@@ -431,7 +431,8 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             user.setEmail(email != null ? email : "");
             user.setFirstName(firstName != null ? firstName : "");
             user.setLastName(lastName != null ? lastName : "");
-            
+            user.setDisplayName(user.getFirstName() + " " + user.getLastName());
+
             // Log what we're looking for
             LOGGER.debug("Looking for roles in introspection response...");
             LOGGER.debug("Available keys in response: {}", body.keySet());
