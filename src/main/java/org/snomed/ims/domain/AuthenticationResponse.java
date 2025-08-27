@@ -75,4 +75,9 @@ public class AuthenticationResponse {
     public List<String> getRoles() {
         return user != null ? user.getRoles() : null;
     }
+
+    @JsonProperty("clientAccess")
+    public List<String> getClientAccess() {
+        return user != null ? user.getClientAccess() : null;
+    }
 }
