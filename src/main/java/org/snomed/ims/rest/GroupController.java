@@ -39,7 +39,8 @@ public class GroupController {
 													 HttpServletRequest request,
 													 HttpServletResponse response) {
 		User currentUser = getCurrentUser(request, response);
-		List<User> users = identityProvider.searchUsersByGroup(currentUser.getId(), groupname, username, maxResults, startAt);
+		String currentUserId = currentUser != null ? currentUser.getId() : null;
+		List<User> users = identityProvider.searchUsersByGroup(currentUserId, groupname, username, maxResults, startAt);
 		return new ResponseEntity<>(users, HttpStatus.OK);
 	}
 
