@@ -665,7 +665,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
                 .flatMap(group -> {
                     LOGGER.debug("Getting members for group: {} (ID: {})", group.getName(), group.getId());
                     
-                    String groupMembersUrl = ADMIN_REALMS + this.keycloakRealms + "/groups/" + group.getId() + "/members?max=-1";
+                    String groupMembersUrl = ADMIN_REALMS + this.keycloakRealms + ADMIN_GROUPS_SLASH + group.getId() + "/members?max=-1";
                     String fullGroupMembersUrl = keycloakUrl + groupMembersUrl;
                     LOGGER.debug("Making request to get group members from: {}", fullGroupMembersUrl);
                     
@@ -970,17 +970,27 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             List<Map<String, Object>> clients = fetchClientsPage(first, 100, requestEntity);
             if (CollectionUtils.isEmpty(clients)) break;
             for (Map<String, Object> client : clients) {
-                Object idValue = client.get("id");
-                if (idValue == null) continue;
-                String clientIdInternal = idValue.toString();
-                String rolesSearchUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_SLASH + clientIdInternal + ADMIN_ROLES_BASE + QUERY_SEARCH + encodedRole + QUERY_EXACT_TRUE;
-                List<Map<String, Object>> roles = fetchListOfMaps(rolesSearchUrl, requestEntity);
-                for (Map<String, Object> role : roles) {
-                    if (roleName.equals(role.get("name"))) {
-                        Object roleId = role.get("id");
-                        aggregated.addAll(fetchUsersFromGroupsForRoleId(roleId != null ? roleId.toString() : null, username, requestEntity));
-                    }
-                }
+                aggregated.addAll(collectUsersForClientRoleName(client, roleName, encodedRole, username, requestEntity));
+            }
+        }
+        return aggregated;
+    }
+
+    private List<User> collectUsersForClientRoleName(Map<String, Object> client,
+                                                     String roleName,
+                                                     String encodedRole,
+                                                     String username,
+                                                     HttpEntity<String> requestEntity) {
+        Object idValue = client.get("id");
+        if (idValue == null) return Collections.emptyList();
+        String clientIdInternal = idValue.toString();
+        String rolesSearchUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_SLASH + clientIdInternal + ADMIN_ROLES_BASE + QUERY_SEARCH + encodedRole + QUERY_EXACT_TRUE;
+        List<Map<String, Object>> roles = fetchListOfMaps(rolesSearchUrl, requestEntity);
+        List<User> aggregated = new ArrayList<>();
+        for (Map<String, Object> role : roles) {
+            if (roleName.equals(role.get("name"))) {
+                Object roleId = role.get("id");
+                aggregated.addAll(fetchUsersFromGroupsForRoleId(roleId != null ? roleId.toString() : null, username, requestEntity));
             }
         }
         return aggregated;
