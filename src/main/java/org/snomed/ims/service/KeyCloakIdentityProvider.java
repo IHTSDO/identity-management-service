@@ -890,15 +890,15 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         LOGGER.debug("No direct users found for role {} on client {}. Expanding composites.", encodedRole, clientIdInternal);
         List<User> aggregated = new ArrayList<>();
 
-        // 1) Client role composites
-        String clientCompositeUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_SLASH + clientIdInternal + ADMIN_ROLES_SLASH + encodedRole + ADMIN_COMPOSITES + ADMIN_ROLES_BASE;
+        // 1) Client role composites (returns both realm and client composites)
+        String clientCompositeUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_SLASH + clientIdInternal + ADMIN_ROLES_SLASH + encodedRole + ADMIN_COMPOSITES;
         List<Map<String, Object>> clientCompositeRoles = fetchListOfMaps(clientCompositeUrl, requestEntity);
-        aggregated.addAll(fetchUsersForCompositeRoles(clientCompositeRoles, username, requestEntity, clientIdInternal));
+        aggregated.addAll(fetchUsersForCompositeRoles(clientCompositeRoles, username, requestEntity));
 
-        // 2) Realm role composites
+        // 2) Realm role composites (only applicable if a realm role with this name exists)
         String realmCompositeUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_ROLES_SLASH + encodedRole + ADMIN_COMPOSITES;
         List<Map<String, Object>> realmCompositeRoles = fetchListOfMaps(realmCompositeUrl, requestEntity);
-        aggregated.addAll(fetchUsersForCompositeRoles(realmCompositeRoles, username, requestEntity, null));
+        aggregated.addAll(fetchUsersForCompositeRoles(realmCompositeRoles, username, requestEntity));
 
         return aggregated.stream().distinct().toList();
     }
@@ -921,8 +921,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
 
     private List<User> fetchUsersForCompositeRoles(List<Map<String, Object>> compositeRoles,
                                                    String username,
-                                                   HttpEntity<String> requestEntity,
-                                                   String clientIdInternalOrNullForRealm) {
+                                                   HttpEntity<String> requestEntity) {
         if (CollectionUtils.isEmpty(compositeRoles)) {
             return Collections.emptyList();
         }
@@ -930,14 +929,23 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         List<User> aggregated = new ArrayList<>();
         for (Map<String, Object> role : compositeRoles) {
             Object nameObj = role.get("name");
+            Object clientIdObj = role.get("clientRole"); // boolean in KC indicating client role
+            String clientInternalIdFromRole = null;
+            if (Boolean.TRUE.equals(clientIdObj)) {
+                // When role is a client role, resolve its client by "containerId"
+                Object containerId = role.get("containerId");
+                if (containerId != null) {
+                    clientInternalIdFromRole = containerId.toString();
+                }
+            }
             if (nameObj == null) {
                 continue;
             }
             String encodedChildRole = URLEncoder.encode(nameObj.toString(), StandardCharsets.UTF_8);
 
             String usersUrl;
-            if (clientIdInternalOrNullForRealm != null) {
-                usersUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_SLASH + clientIdInternalOrNullForRealm + ADMIN_ROLES_SLASH + encodedChildRole + ADMIN_USERS_COLLECTION;
+            if (clientInternalIdFromRole != null) {
+                usersUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_SLASH + clientInternalIdFromRole + ADMIN_ROLES_SLASH + encodedChildRole + ADMIN_USERS_COLLECTION;
             } else {
                 usersUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_ROLES_SLASH + encodedChildRole + ADMIN_USERS_COLLECTION;
             }
