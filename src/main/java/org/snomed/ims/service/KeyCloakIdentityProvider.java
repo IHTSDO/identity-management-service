@@ -240,38 +240,17 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         HttpEntity<String> requestEntity = new HttpEntity<>(headers);
         
         try {
-            List<KeyCloakGroup> keyCloakGroups;
-            
-            if (currentUserId == null || currentUserId.isEmpty()) {
-                // Admin/system search - find the requested group directly by name
-                LOGGER.debug("Admin search detected (currentUserId is null), searching for group directly: {}", groupName);
-                keyCloakGroups = findGroupByName(groupName, requestEntity);
-            } else {
-                // Regular user search - get user's groups first, then filter
-                String userGroupsUrl = ADMIN_REALMS + this.keycloakRealms + USERS + currentUserId + "/groups";
-                String fullUserGroupsUrl = keycloakUrl + userGroupsUrl;
-                LOGGER.debug("Making request to get user groups from: {}", fullUserGroupsUrl);
-                LOGGER.debug("Request headers: Authorization=Bearer ***{}", adminToken.length() > 8 ? adminToken.substring(Math.max(0, adminToken.length() - 8)) : adminToken);
-                
-                ResponseEntity<List<KeyCloakGroup>> groupResponse = restTemplate.exchange(
-                        fullUserGroupsUrl,
-                        HttpMethod.GET,
-                        requestEntity,
-                        new ParameterizedTypeReference<>() {
-                        }
-                );
-                
-                keyCloakGroups = groupResponse.getBody();
-                LOGGER.debug("User groups response status: {}, body size: {}", 
-                    groupResponse.getStatusCode(), keyCloakGroups != null ? keyCloakGroups.size() : 0);
-            }
+            // Since we have admin credentials (adminToken), we can search any group directly
+            // No need to check current user's group membership when using admin access
+            LOGGER.debug("Using admin credentials to search for group directly: {}", groupName);
+            List<KeyCloakGroup> keyCloakGroups = findGroupByName(groupName, requestEntity);
             
             if (CollectionUtils.isEmpty(keyCloakGroups)) {
-                LOGGER.debug("No groups found for user: {} or group not found: {}", currentUserId, groupName);
+                LOGGER.debug("Group not found: {}", groupName);
                 return Collections.emptyList();
             }
             
-            LOGGER.debug("Found {} groups for search, currentUserId: {}", keyCloakGroups.size(), currentUserId);
+            LOGGER.debug("Found {} groups for admin search", keyCloakGroups.size());
             keyCloakGroups.forEach(group -> LOGGER.debug("Group: {} (ID: {})", group.getName(), group.getId()));
             
             List<User> users = getUsersForGroup(groupName, username, keyCloakGroups, requestEntity);
