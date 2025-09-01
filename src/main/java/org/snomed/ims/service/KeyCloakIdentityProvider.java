@@ -780,7 +780,13 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             }
 
             // 2) Try client role users endpoint for our configured client
-            return getUsersForClientRole(username, requestEntity, encodedRole);
+            List<User> clientRoleUsers = getUsersForClientRole(username, requestEntity, encodedRole);
+            if (!CollectionUtils.isEmpty(clientRoleUsers)) {
+                return clientRoleUsers;
+            }
+
+            // 3) Fallback: search across all clients for a matching role name
+            return getUsersForRoleAcrossAllClients(roleName, username, requestEntity);
         } catch (Exception e) {
             LOGGER.error("Failed to search users by role: {}", roleOrPrefixedRoleName, e);
         }
@@ -817,6 +823,69 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
                 })
                 .distinct()
                 .toList();
+    }
+
+    private List<User> getUsersForRoleAcrossAllClients(String roleName, String username, HttpEntity<String> requestEntity) {
+        try {
+            LOGGER.debug("Searching all clients for role: {}", roleName);
+            String encodedRole = URLEncoder.encode(roleName, StandardCharsets.UTF_8);
+
+            List<User> aggregated = new ArrayList<>();
+            int first = 0;
+            int pageSize = 100;
+            while (true) {
+                String clientsUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + "/clients?first=" + first + "&max=" + pageSize;
+                List<Map<String, Object>> clients = fetchListOfMaps(clientsUrl, requestEntity);
+                if (CollectionUtils.isEmpty(clients)) {
+                    break;
+                }
+
+                for (Map<String, Object> client : clients) {
+                    Object idValue = client.get("id");
+                    if (idValue == null) {
+                        continue;
+                    }
+                    String clientIdInternal = idValue.toString();
+
+                    String rolesSearchUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + "/clients/" + clientIdInternal + "/roles?search=" + encodedRole;
+                    List<Map<String, Object>> roles = fetchListOfMaps(rolesSearchUrl, requestEntity);
+                    boolean hasExactMatch = roles.stream().anyMatch(r -> roleName.equals(r.get("name")));
+                    if (!hasExactMatch) {
+                        continue;
+                    }
+
+                    String usersUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + "/clients/" + clientIdInternal + "/roles/" + encodedRole + "/users";
+                    LOGGER.debug("Found matching role on client {}. Fetching users via: {}", clientIdInternal, usersUrl);
+                    List<KeyCloakUser> clientRoleUsers = fetchUsers(usersUrl, requestEntity);
+                    if (!CollectionUtils.isEmpty(clientRoleUsers)) {
+                        aggregated.addAll(mapAndFilterUsers(clientRoleUsers, username));
+                    }
+                }
+
+                first += pageSize;
+            }
+
+            return aggregated.stream().distinct().toList();
+        } catch (Exception e) {
+            LOGGER.debug("Error searching role across all clients: {}", e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    private List<Map<String, Object>> fetchListOfMaps(String url, HttpEntity<String> requestEntity) {
+        try {
+            ResponseEntity<List<Map<String, Object>>> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    requestEntity,
+                    new ParameterizedTypeReference<>() {}
+            );
+            List<Map<String, Object>> body = response.getBody();
+            return body != null ? body : Collections.emptyList();
+        } catch (Exception e) {
+            LOGGER.debug("Failed to fetch list from {}: {}", url, e.getMessage());
+            return Collections.emptyList();
+        }
     }
 
     private List<KeyCloakUser> fetchUsers(String url, HttpEntity<String> requestEntity) {
