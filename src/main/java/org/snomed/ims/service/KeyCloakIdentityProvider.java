@@ -27,6 +27,12 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
     private static final String ADMIN_REALMS = "/admin/realms/";
     private static final String REALMS = "/realms/";
     private static final String USERS = "/users/";
+    // Admin API path fragments (avoid string duplication for Sonar)
+    private static final String ADMIN_CLIENTS_BASE = "/clients";
+    private static final String ADMIN_CLIENTS_SLASH = "/clients/";
+    private static final String ADMIN_ROLES_BASE = "/roles";
+    private static final String ADMIN_ROLES_SLASH = "/roles/";
+    private static final String ADMIN_USERS_COLLECTION = "/users";
     public static final String CLIENT_ID = "client_id";
     public static final String CLIENT_SECRET = "client_secret";
     public static final String GRANT_TYPE = "grant_type";
@@ -770,7 +776,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             String encodedRole = URLEncoder.encode(roleName, StandardCharsets.UTF_8);
 
             // 1) Try realm role users endpoint
-            String realmRoleUsersUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + "/roles/" + encodedRole + "/users";
+            String realmRoleUsersUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_ROLES_SLASH + encodedRole + ADMIN_USERS_COLLECTION;
             LOGGER.debug("Trying realm role users endpoint: {}", realmRoleUsersUrl);
             List<KeyCloakUser> realmRoleUsers = fetchUsers(realmRoleUsersUrl, requestEntity);
 
@@ -797,7 +803,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         try {
             String clientInternalId = resolveClientInternalId(this.keycloakClientId, requestEntity);
             if (clientInternalId != null) {
-                String clientRoleUsersUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + "/clients/" + clientInternalId + "/roles/" + encodedRole + "/users";
+                String clientRoleUsersUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_SLASH + clientInternalId + ADMIN_ROLES_SLASH + encodedRole + ADMIN_USERS_COLLECTION;
                 LOGGER.debug("Trying client role users endpoint: {}", clientRoleUsersUrl);
                 List<KeyCloakUser> clientRoleUsers = fetchUsers(clientRoleUsersUrl, requestEntity);
                 if (!CollectionUtils.isEmpty(clientRoleUsers)) {
@@ -834,7 +840,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             int first = 0;
             int pageSize = 100;
             while (true) {
-                String clientsUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + "/clients?first=" + first + "&max=" + pageSize;
+                String clientsUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_BASE + "?first=" + first + "&max=" + pageSize;
                 List<Map<String, Object>> clients = fetchListOfMaps(clientsUrl, requestEntity);
                 if (CollectionUtils.isEmpty(clients)) {
                     break;
@@ -842,23 +848,20 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
 
                 for (Map<String, Object> client : clients) {
                     Object idValue = client.get("id");
-                    if (idValue == null) {
-                        continue;
-                    }
-                    String clientIdInternal = idValue.toString();
+                    if (idValue != null) {
+                        String clientIdInternal = idValue.toString();
 
-                    String rolesSearchUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + "/clients/" + clientIdInternal + "/roles?search=" + encodedRole;
-                    List<Map<String, Object>> roles = fetchListOfMaps(rolesSearchUrl, requestEntity);
-                    boolean hasExactMatch = roles.stream().anyMatch(r -> roleName.equals(r.get("name")));
-                    if (!hasExactMatch) {
-                        continue;
-                    }
-
-                    String usersUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + "/clients/" + clientIdInternal + "/roles/" + encodedRole + "/users";
-                    LOGGER.debug("Found matching role on client {}. Fetching users via: {}", clientIdInternal, usersUrl);
-                    List<KeyCloakUser> clientRoleUsers = fetchUsers(usersUrl, requestEntity);
-                    if (!CollectionUtils.isEmpty(clientRoleUsers)) {
-                        aggregated.addAll(mapAndFilterUsers(clientRoleUsers, username));
+                        String rolesSearchUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_SLASH + clientIdInternal + ADMIN_ROLES_BASE + "?search=" + encodedRole;
+                        List<Map<String, Object>> roles = fetchListOfMaps(rolesSearchUrl, requestEntity);
+                        boolean hasExactMatch = roles.stream().anyMatch(r -> roleName.equals(r.get("name")));
+                        if (hasExactMatch) {
+                            String usersUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_SLASH + clientIdInternal + ADMIN_ROLES_SLASH + encodedRole + ADMIN_USERS_COLLECTION;
+                            LOGGER.debug("Found matching role on client {}. Fetching users via: {}", clientIdInternal, usersUrl);
+                            List<KeyCloakUser> clientRoleUsers = fetchUsers(usersUrl, requestEntity);
+                            if (!CollectionUtils.isEmpty(clientRoleUsers)) {
+                                aggregated.addAll(mapAndFilterUsers(clientRoleUsers, username));
+                            }
+                        }
                     }
                 }
 
@@ -908,7 +911,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
 
     private String resolveClientInternalId(String clientId, HttpEntity<String> requestEntity) {
         try {
-            String clientsUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + "/clients?clientId=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8);
+            String clientsUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_BASE + "?clientId=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8);
             LOGGER.debug("Resolving client internal ID via: {}", clientsUrl);
             ResponseEntity<List<Map<String, Object>>> clientResponse = restTemplate.exchange(
                     clientsUrl,
