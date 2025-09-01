@@ -240,30 +240,38 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         HttpEntity<String> requestEntity = new HttpEntity<>(headers);
         
         try {
-            // First API call: Get user's groups
-            String userGroupsUrl = ADMIN_REALMS + this.keycloakRealms + USERS + currentUserId + "/groups";
-            String fullUserGroupsUrl = keycloakUrl + userGroupsUrl;
-            LOGGER.debug("Making request to get user groups from: {}", fullUserGroupsUrl);
-            LOGGER.debug("Request headers: Authorization=Bearer ***{}", adminToken.length() > 8 ? adminToken.substring(Math.max(0, adminToken.length() - 8)) : adminToken);
+            List<KeyCloakGroup> keyCloakGroups;
             
-            ResponseEntity<List<KeyCloakGroup>> groupResponse = restTemplate.exchange(
-                    fullUserGroupsUrl,
-                    HttpMethod.GET,
-                    requestEntity,
-                    new ParameterizedTypeReference<>() {
-                    }
-            );
-            
-            List<KeyCloakGroup> keyCloakGroups = groupResponse.getBody();
-            LOGGER.debug("User groups response status: {}, body size: {}", 
-                groupResponse.getStatusCode(), keyCloakGroups != null ? keyCloakGroups.size() : 0);
+            if (currentUserId == null || currentUserId.isEmpty()) {
+                // Admin/system search - find the requested group directly by name
+                LOGGER.debug("Admin search detected (currentUserId is null), searching for group directly: {}", groupName);
+                keyCloakGroups = findGroupByName(groupName, requestEntity);
+            } else {
+                // Regular user search - get user's groups first, then filter
+                String userGroupsUrl = ADMIN_REALMS + this.keycloakRealms + USERS + currentUserId + "/groups";
+                String fullUserGroupsUrl = keycloakUrl + userGroupsUrl;
+                LOGGER.debug("Making request to get user groups from: {}", fullUserGroupsUrl);
+                LOGGER.debug("Request headers: Authorization=Bearer ***{}", adminToken.length() > 8 ? adminToken.substring(Math.max(0, adminToken.length() - 8)) : adminToken);
+                
+                ResponseEntity<List<KeyCloakGroup>> groupResponse = restTemplate.exchange(
+                        fullUserGroupsUrl,
+                        HttpMethod.GET,
+                        requestEntity,
+                        new ParameterizedTypeReference<>() {
+                        }
+                );
+                
+                keyCloakGroups = groupResponse.getBody();
+                LOGGER.debug("User groups response status: {}, body size: {}", 
+                    groupResponse.getStatusCode(), keyCloakGroups != null ? keyCloakGroups.size() : 0);
+            }
             
             if (CollectionUtils.isEmpty(keyCloakGroups)) {
-                LOGGER.debug("No groups found for user: {}", currentUserId);
+                LOGGER.debug("No groups found for user: {} or group not found: {}", currentUserId, groupName);
                 return Collections.emptyList();
             }
             
-            LOGGER.debug("Found {} groups for user: {}", keyCloakGroups.size(), currentUserId);
+            LOGGER.debug("Found {} groups for search, currentUserId: {}", keyCloakGroups.size(), currentUserId);
             keyCloakGroups.forEach(group -> LOGGER.debug("Group: {} (ID: {})", group.getName(), group.getId()));
             
             List<User> users = getUsersForGroup(groupName, username, keyCloakGroups, requestEntity);
@@ -415,6 +423,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             }
             
             // Extract user information from introspection response
+            String userId = (String) body.get("sub"); // Extract user ID from subject field
             String username = (String) body.get("preferred_username");
             String email = (String) body.get("email");
             String firstName = (String) body.get("given_name");
@@ -427,6 +436,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             
             // Create user object
             User user = new User();
+            user.setId(userId); // Set the user ID from the token's subject field
             user.setLogin(username);
             user.setEmail(email != null ? email : "");
             user.setFirstName(firstName != null ? firstName : "");
@@ -604,6 +614,47 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         user.setActive(keyCloakUser.isEnabled());
 
         return user;
+    }
+
+    /**
+     * Find a group by name using the Keycloak admin API
+     * @param groupName the name of the group to find
+     * @param requestEntity the HTTP request entity with admin token
+     * @return list containing the group if found, empty list otherwise
+     */
+    private List<KeyCloakGroup> findGroupByName(String groupName, HttpEntity<String> requestEntity) {
+        try {
+            // Search for groups by name using Keycloak admin API
+            String searchGroupUrl = ADMIN_REALMS + this.keycloakRealms + "/groups?search=" + groupName + "&exact=true";
+            String fullSearchGroupUrl = keycloakUrl + searchGroupUrl;
+            LOGGER.debug("Searching for group by name: {} at URL: {}", groupName, fullSearchGroupUrl);
+            
+            ResponseEntity<List<KeyCloakGroup>> groupResponse = restTemplate.exchange(
+                    fullSearchGroupUrl,
+                    HttpMethod.GET,
+                    requestEntity,
+                    new ParameterizedTypeReference<>() {
+                    }
+            );
+            
+            List<KeyCloakGroup> groups = groupResponse.getBody();
+            if (CollectionUtils.isEmpty(groups)) {
+                LOGGER.debug("No group found with name: {}", groupName);
+                return Collections.emptyList();
+            }
+            
+            // Filter to exact match since search might return partial matches
+            List<KeyCloakGroup> exactMatches = groups.stream()
+                    .filter(group -> groupName.equals(group.getName()))
+                    .toList();
+            
+            LOGGER.debug("Found {} exact matches for group name: {}", exactMatches.size(), groupName);
+            return exactMatches;
+            
+        } catch (Exception e) {
+            LOGGER.error("Failed to find group by name: {}, Error: {}", groupName, e.getMessage(), e);
+            return Collections.emptyList();
+        }
     }
 
     private List<User> getUsersForGroup(final String groupName, final String username, List<KeyCloakGroup> keyCloakGroups, HttpEntity<String> requestEntity) {
