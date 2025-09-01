@@ -34,6 +34,9 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
     private static final String ADMIN_ROLES_SLASH = "/roles/";
     private static final String ADMIN_USERS_COLLECTION = "/users";
     private static final String ADMIN_COMPOSITES = "/composites";
+    private static final String ADMIN_ROLES_BY_ID = "/roles-by-id/";
+    private static final String ADMIN_GROUPS_BASE = "/groups";
+    private static final String ADMIN_GROUPS_SLASH = "/groups/";
     public static final String CLIENT_ID = "client_id";
     public static final String CLIENT_SECRET = "client_secret";
     public static final String GRANT_TYPE = "grant_type";
@@ -793,7 +796,13 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             }
 
             // 3) Fallback: search across all clients for a matching role name
-            return getUsersForRoleAcrossAllClients(roleName, username, requestEntity);
+            List<User> acrossClients = getUsersForRoleAcrossAllClients(roleName, username, requestEntity);
+            if (!CollectionUtils.isEmpty(acrossClients)) {
+                return acrossClients;
+            }
+
+            // 4) Final fallback: fetch users by groups that have the role assigned (group role mappings)
+            return getUsersViaGroupRoleAssignments(roleName, username, requestEntity);
         } catch (Exception e) {
             LOGGER.error("Failed to search users by role: {}", roleOrPrefixedRoleName, e);
         }
@@ -917,6 +926,97 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             LOGGER.debug("Failed to fetch list from {}: {}", url, e.getMessage());
             return Collections.emptyList();
         }
+    }
+
+    private List<User> getUsersViaGroupRoleAssignments(String roleName, String username, HttpEntity<String> requestEntity) {
+        try {
+            // Find role across realm and clients to get role id
+            String encodedRole = URLEncoder.encode(roleName, StandardCharsets.UTF_8);
+            // 1) Try realm roles by name
+            String realmRolesSearch = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_ROLES_BASE + "?search=" + encodedRole + "&exact=true";
+            List<Map<String, Object>> realmRoles = fetchListOfMaps(realmRolesSearch, requestEntity);
+            List<User> aggregated = new ArrayList<>();
+
+            // Process realm roles
+            for (Map<String, Object> role : realmRoles) {
+                if (roleName.equals(role.get("name"))) {
+                    Object roleId = role.get("id");
+                    aggregated.addAll(fetchUsersFromGroupsForRoleId(roleId != null ? roleId.toString() : null, null, username, requestEntity));
+                }
+            }
+
+            // If none found as realm role, iterate clients for roles with the same name
+            if (aggregated.isEmpty()) {
+                for (int first = 0; ; first += 100) {
+                    List<Map<String, Object>> clients = fetchClientsPage(first, 100, requestEntity);
+                    if (CollectionUtils.isEmpty(clients)) break;
+                    for (Map<String, Object> client : clients) {
+                        Object idValue = client.get("id");
+                        if (idValue == null) continue;
+                        String clientIdInternal = idValue.toString();
+                        String rolesSearchUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_SLASH + clientIdInternal + ADMIN_ROLES_BASE + "?search=" + encodedRole + "&exact=true";
+                        List<Map<String, Object>> roles = fetchListOfMaps(rolesSearchUrl, requestEntity);
+                        for (Map<String, Object> role : roles) {
+                            if (roleName.equals(role.get("name"))) {
+                                Object roleId = role.get("id");
+                                aggregated.addAll(fetchUsersFromGroupsForRoleId(roleId != null ? roleId.toString() : null, clientIdInternal, username, requestEntity));
+                            }
+                        }
+                    }
+                }
+            }
+
+            return aggregated.stream().distinct().toList();
+        } catch (Exception e) {
+            LOGGER.debug("Error fetching users via group role assignments for role {}: {}", roleName, e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    private List<User> fetchUsersFromGroupsForRoleId(String roleId,
+                                                     String clientInternalIdOrNull,
+                                                     String username,
+                                                     HttpEntity<String> requestEntity) {
+        if (roleId == null || roleId.isEmpty()) return Collections.emptyList();
+
+        // Roles-by-id group mappings endpoint
+        String groupMappingsUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_ROLES_BY_ID + roleId + "/groups";
+        List<Map<String, Object>> groups = fetchListOfMaps(groupMappingsUrl, requestEntity);
+        if (CollectionUtils.isEmpty(groups)) return Collections.emptyList();
+
+        List<User> aggregated = new ArrayList<>();
+        for (Map<String, Object> group : groups) {
+            Object groupIdObj = group.get("id");
+            if (groupIdObj == null) continue;
+            String groupId = groupIdObj.toString();
+
+            // Gather members for this group and all subgroups
+            aggregated.addAll(fetchUsersForGroupAndDescendants(groupId, username, requestEntity));
+        }
+        return aggregated;
+    }
+
+    private List<User> fetchUsersForGroupAndDescendants(String groupId,
+                                                        String username,
+                                                        HttpEntity<String> requestEntity) {
+        List<User> aggregated = new ArrayList<>();
+        // Members of group
+        String membersUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_GROUPS_SLASH + groupId + ADMIN_USERS_COLLECTION + "?max=-1";
+        List<KeyCloakUser> members = fetchUsers(membersUrl, requestEntity);
+        if (!CollectionUtils.isEmpty(members)) {
+            aggregated.addAll(mapAndFilterUsers(members, username));
+        }
+
+        // Recurse into subgroups
+        String childrenUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_GROUPS_SLASH + groupId + "/children";
+        List<Map<String, Object>> children = fetchListOfMaps(childrenUrl, requestEntity);
+        for (Map<String, Object> child : children) {
+            Object childId = child.get("id");
+            if (childId != null) {
+                aggregated.addAll(fetchUsersForGroupAndDescendants(childId.toString(), username, requestEntity));
+            }
+        }
+        return aggregated;
     }
 
     private List<User> fetchUsersForCompositeRoles(List<Map<String, Object>> compositeRoles,
