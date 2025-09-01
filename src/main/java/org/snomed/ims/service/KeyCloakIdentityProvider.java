@@ -246,7 +246,18 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             List<KeyCloakGroup> keyCloakGroups = findGroupByName(groupName, requestEntity);
             
             if (CollectionUtils.isEmpty(keyCloakGroups)) {
-                LOGGER.debug("Group not found: {}", groupName);
+                LOGGER.debug("Group not found: {}. Falling back to role search.", groupName);
+                List<User> usersByRole = getUsersForRole(groupName, username, requestEntity);
+                if (!CollectionUtils.isEmpty(usersByRole)) {
+                    if (startAt >= 0 && startAt < usersByRole.size()) {
+                        int toIndex = Math.min(startAt + maxResults, usersByRole.size());
+                        List<User> paginatedUsers = usersByRole.subList(startAt, toIndex);
+                        LOGGER.debug("Returning paginated users by role: {} to {} (total: {})", startAt, toIndex - 1, paginatedUsers.size());
+                        return paginatedUsers;
+                    }
+                    LOGGER.debug("No users found after pagination for role search");
+                    return Collections.emptyList();
+                }
                 return Collections.emptyList();
             }
             
@@ -748,5 +759,100 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             LOGGER.debug("realm_access.roles: {}", rolesObj);
             extractDirectRoles(rolesObj, roles);
         }
+    }
+
+    private List<User> getUsersForRole(final String roleOrPrefixedRoleName, final String username, HttpEntity<String> requestEntity) {
+        try {
+            String roleName = roleOrPrefixedRoleName.startsWith(AuthoritiesConstants.ROLE_PREFIX)
+                    ? roleOrPrefixedRoleName.substring(AuthoritiesConstants.ROLE_PREFIX.length())
+                    : roleOrPrefixedRoleName;
+
+            String encodedRole = URLEncoder.encode(roleName, StandardCharsets.UTF_8);
+
+            // 1) Try realm role users endpoint
+            String realmRoleUsersUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + "/roles/" + encodedRole + "/users";
+            LOGGER.debug("Trying realm role users endpoint: {}", realmRoleUsersUrl);
+            List<KeyCloakUser> realmRoleUsers = fetchUsers(realmRoleUsersUrl, requestEntity);
+
+            // If found, map and return
+            if (!CollectionUtils.isEmpty(realmRoleUsers)) {
+                return realmRoleUsers.stream()
+                        .filter(KeyCloakUser::isEnabled)
+                        .filter(u -> !StringUtils.hasLength(username) || u.getUsername().contains(username))
+                        .map(u -> {
+                            User user = toUser(u);
+                            user.setEmail(null);
+                            return user;
+                        })
+                        .distinct()
+                        .toList();
+            }
+
+            // 2) Try client role users endpoint for our configured client
+            try {
+                String clientInternalId = resolveClientInternalId(this.keycloakClientId, requestEntity);
+                if (clientInternalId != null) {
+                    String clientRoleUsersUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + "/clients/" + clientInternalId + "/roles/" + encodedRole + "/users";
+                    LOGGER.debug("Trying client role users endpoint: {}", clientRoleUsersUrl);
+                    List<KeyCloakUser> clientRoleUsers = fetchUsers(clientRoleUsersUrl, requestEntity);
+                    if (!CollectionUtils.isEmpty(clientRoleUsers)) {
+                        return clientRoleUsers.stream()
+                                .filter(KeyCloakUser::isEnabled)
+                                .filter(u -> !StringUtils.hasLength(username) || u.getUsername().contains(username))
+                                .map(u -> {
+                                    User user = toUser(u);
+                                    user.setEmail(null);
+                                    return user;
+                                })
+                                .distinct()
+                                .toList();
+                    }
+                } else {
+                    LOGGER.debug("Could not resolve internal client ID for clientId: {}", this.keycloakClientId);
+                }
+            } catch (Exception e) {
+                LOGGER.debug("Error resolving or querying client role users: {}", e.getMessage());
+            }
+        } catch (Exception e) {
+            LOGGER.error("Failed to search users by role: {}", roleOrPrefixedRoleName, e);
+        }
+        return Collections.emptyList();
+    }
+
+    private List<KeyCloakUser> fetchUsers(String url, HttpEntity<String> requestEntity) {
+        try {
+            ResponseEntity<List<KeyCloakUser>> userResponse = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    requestEntity,
+                    new ParameterizedTypeReference<>() {}
+            );
+            LOGGER.debug("Users response status: {}, body size: {}", userResponse.getStatusCode(), userResponse.getBody() != null ? userResponse.getBody().size() : 0);
+            return userResponse.getBody();
+        } catch (Exception e) {
+            LOGGER.debug("Failed to fetch users from {}: {}", url, e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    private String resolveClientInternalId(String clientId, HttpEntity<String> requestEntity) {
+        try {
+            String clientsUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + "/clients?clientId=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8);
+            LOGGER.debug("Resolving client internal ID via: {}", clientsUrl);
+            ResponseEntity<List<Map<String, Object>>> clientResponse = restTemplate.exchange(
+                    clientsUrl,
+                    HttpMethod.GET,
+                    requestEntity,
+                    new ParameterizedTypeReference<>() {}
+            );
+            List<Map<String, Object>> clients = clientResponse.getBody();
+            if (!CollectionUtils.isEmpty(clients)) {
+                Object idValue = clients.get(0).get("id");
+                return idValue != null ? idValue.toString() : null;
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Failed to resolve client internal ID for {}: {}", clientId, e.getMessage());
+        }
+        return null;
     }
 }
