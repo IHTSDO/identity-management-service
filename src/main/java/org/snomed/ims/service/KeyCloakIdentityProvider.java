@@ -776,47 +776,47 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
 
             // If found, map and return
             if (!CollectionUtils.isEmpty(realmRoleUsers)) {
-                return realmRoleUsers.stream()
-                        .filter(KeyCloakUser::isEnabled)
-                        .filter(u -> !StringUtils.hasLength(username) || u.getUsername().contains(username))
-                        .map(u -> {
-                            User user = toUser(u);
-                            user.setEmail(null);
-                            return user;
-                        })
-                        .distinct()
-                        .toList();
+                return mapAndFilterUsers(realmRoleUsers, username);
             }
 
             // 2) Try client role users endpoint for our configured client
-            try {
-                String clientInternalId = resolveClientInternalId(this.keycloakClientId, requestEntity);
-                if (clientInternalId != null) {
-                    String clientRoleUsersUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + "/clients/" + clientInternalId + "/roles/" + encodedRole + "/users";
-                    LOGGER.debug("Trying client role users endpoint: {}", clientRoleUsersUrl);
-                    List<KeyCloakUser> clientRoleUsers = fetchUsers(clientRoleUsersUrl, requestEntity);
-                    if (!CollectionUtils.isEmpty(clientRoleUsers)) {
-                        return clientRoleUsers.stream()
-                                .filter(KeyCloakUser::isEnabled)
-                                .filter(u -> !StringUtils.hasLength(username) || u.getUsername().contains(username))
-                                .map(u -> {
-                                    User user = toUser(u);
-                                    user.setEmail(null);
-                                    return user;
-                                })
-                                .distinct()
-                                .toList();
-                    }
-                } else {
-                    LOGGER.debug("Could not resolve internal client ID for clientId: {}", this.keycloakClientId);
-                }
-            } catch (Exception e) {
-                LOGGER.debug("Error resolving or querying client role users: {}", e.getMessage());
-            }
+            return getUsersForClientRole(username, requestEntity, encodedRole);
         } catch (Exception e) {
             LOGGER.error("Failed to search users by role: {}", roleOrPrefixedRoleName, e);
         }
         return Collections.emptyList();
+    }
+
+    private List<User> getUsersForClientRole(String username, HttpEntity<String> requestEntity, String encodedRole) {
+        try {
+            String clientInternalId = resolveClientInternalId(this.keycloakClientId, requestEntity);
+            if (clientInternalId != null) {
+                String clientRoleUsersUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + "/clients/" + clientInternalId + "/roles/" + encodedRole + "/users";
+                LOGGER.debug("Trying client role users endpoint: {}", clientRoleUsersUrl);
+                List<KeyCloakUser> clientRoleUsers = fetchUsers(clientRoleUsersUrl, requestEntity);
+                if (!CollectionUtils.isEmpty(clientRoleUsers)) {
+                    return mapAndFilterUsers(clientRoleUsers, username);
+                }
+            } else {
+                LOGGER.debug("Could not resolve internal client ID for clientId: {}", this.keycloakClientId);
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Error resolving or querying client role users: {}", e.getMessage());
+        }
+        return Collections.emptyList();
+    }
+
+    private List<User> mapAndFilterUsers(List<KeyCloakUser> users, String username) {
+        return users.stream()
+                .filter(KeyCloakUser::isEnabled)
+                .filter(u -> !StringUtils.hasLength(username) || u.getUsername().contains(username))
+                .map(u -> {
+                    User user = toUser(u);
+                    user.setEmail(null);
+                    return user;
+                })
+                .distinct()
+                .toList();
     }
 
     private List<KeyCloakUser> fetchUsers(String url, HttpEntity<String> requestEntity) {
@@ -827,8 +827,10 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
                     requestEntity,
                     new ParameterizedTypeReference<>() {}
             );
-            LOGGER.debug("Users response status: {}, body size: {}", userResponse.getStatusCode(), userResponse.getBody() != null ? userResponse.getBody().size() : 0);
-            return userResponse.getBody();
+            List<KeyCloakUser> body = userResponse.getBody();
+            int bodySize = body != null ? body.size() : 0;
+            LOGGER.debug("Users response status: {}, body size: {}", userResponse.getStatusCode(), bodySize);
+            return body != null ? body : Collections.emptyList();
         } catch (Exception e) {
             LOGGER.debug("Failed to fetch users from {}: {}", url, e.getMessage());
             return Collections.emptyList();
