@@ -33,6 +33,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
     private static final String ADMIN_ROLES_BASE = "/roles";
     private static final String ADMIN_ROLES_SLASH = "/roles/";
     private static final String ADMIN_USERS_COLLECTION = "/users";
+    private static final String ADMIN_COMPOSITES = "/composites";
     public static final String CLIENT_ID = "client_id";
     public static final String CLIENT_SECRET = "client_secret";
     public static final String GRANT_TYPE = "grant_type";
@@ -881,7 +882,25 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         String usersUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_SLASH + clientIdInternal + ADMIN_ROLES_SLASH + encodedRole + ADMIN_USERS_COLLECTION;
         LOGGER.debug("Found matching role on client {}. Fetching users via: {}", clientIdInternal, usersUrl);
         List<KeyCloakUser> clientRoleUsers = fetchUsers(usersUrl, requestEntity);
-        return CollectionUtils.isEmpty(clientRoleUsers) ? Collections.emptyList() : mapAndFilterUsers(clientRoleUsers, username);
+        if (!CollectionUtils.isEmpty(clientRoleUsers)) {
+            return mapAndFilterUsers(clientRoleUsers, username);
+        }
+
+        // If no direct users, expand composites and aggregate users from child roles
+        LOGGER.debug("No direct users found for role {} on client {}. Expanding composites.", encodedRole, clientIdInternal);
+        List<User> aggregated = new ArrayList<>();
+
+        // 1) Client role composites
+        String clientCompositeUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_SLASH + clientIdInternal + ADMIN_ROLES_SLASH + encodedRole + ADMIN_COMPOSITES + ADMIN_ROLES_BASE;
+        List<Map<String, Object>> clientCompositeRoles = fetchListOfMaps(clientCompositeUrl, requestEntity);
+        aggregated.addAll(fetchUsersForCompositeRoles(clientCompositeRoles, username, requestEntity, clientIdInternal));
+
+        // 2) Realm role composites
+        String realmCompositeUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_ROLES_SLASH + encodedRole + ADMIN_COMPOSITES;
+        List<Map<String, Object>> realmCompositeRoles = fetchListOfMaps(realmCompositeUrl, requestEntity);
+        aggregated.addAll(fetchUsersForCompositeRoles(realmCompositeRoles, username, requestEntity, null));
+
+        return aggregated.stream().distinct().toList();
     }
 
     private List<Map<String, Object>> fetchListOfMaps(String url, HttpEntity<String> requestEntity) {
@@ -898,6 +917,36 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             LOGGER.debug("Failed to fetch list from {}: {}", url, e.getMessage());
             return Collections.emptyList();
         }
+    }
+
+    private List<User> fetchUsersForCompositeRoles(List<Map<String, Object>> compositeRoles,
+                                                   String username,
+                                                   HttpEntity<String> requestEntity,
+                                                   String clientIdInternalOrNullForRealm) {
+        if (CollectionUtils.isEmpty(compositeRoles)) {
+            return Collections.emptyList();
+        }
+
+        List<User> aggregated = new ArrayList<>();
+        for (Map<String, Object> role : compositeRoles) {
+            Object nameObj = role.get("name");
+            if (nameObj == null) {
+                continue;
+            }
+            String encodedChildRole = URLEncoder.encode(nameObj.toString(), StandardCharsets.UTF_8);
+
+            String usersUrl;
+            if (clientIdInternalOrNullForRealm != null) {
+                usersUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_SLASH + clientIdInternalOrNullForRealm + ADMIN_ROLES_SLASH + encodedChildRole + ADMIN_USERS_COLLECTION;
+            } else {
+                usersUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_ROLES_SLASH + encodedChildRole + ADMIN_USERS_COLLECTION;
+            }
+            List<KeyCloakUser> childUsers = fetchUsers(usersUrl, requestEntity);
+            if (!CollectionUtils.isEmpty(childUsers)) {
+                aggregated.addAll(mapAndFilterUsers(childUsers, username));
+            }
+        }
+        return aggregated;
     }
 
     private List<KeyCloakUser> fetchUsers(String url, HttpEntity<String> requestEntity) {
