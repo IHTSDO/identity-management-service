@@ -837,35 +837,15 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             String encodedRole = URLEncoder.encode(roleName, StandardCharsets.UTF_8);
 
             List<User> aggregated = new ArrayList<>();
-            int first = 0;
             int pageSize = 100;
-            while (true) {
-                String clientsUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_BASE + "?first=" + first + "&max=" + pageSize;
-                List<Map<String, Object>> clients = fetchListOfMaps(clientsUrl, requestEntity);
+            for (int first = 0; ; first += pageSize) {
+                List<Map<String, Object>> clients = fetchClientsPage(first, pageSize, requestEntity);
                 if (CollectionUtils.isEmpty(clients)) {
                     break;
                 }
-
                 for (Map<String, Object> client : clients) {
-                    Object idValue = client.get("id");
-                    if (idValue != null) {
-                        String clientIdInternal = idValue.toString();
-
-                        String rolesSearchUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_SLASH + clientIdInternal + ADMIN_ROLES_BASE + "?search=" + encodedRole;
-                        List<Map<String, Object>> roles = fetchListOfMaps(rolesSearchUrl, requestEntity);
-                        boolean hasExactMatch = roles.stream().anyMatch(r -> roleName.equals(r.get("name")));
-                        if (hasExactMatch) {
-                            String usersUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_SLASH + clientIdInternal + ADMIN_ROLES_SLASH + encodedRole + ADMIN_USERS_COLLECTION;
-                            LOGGER.debug("Found matching role on client {}. Fetching users via: {}", clientIdInternal, usersUrl);
-                            List<KeyCloakUser> clientRoleUsers = fetchUsers(usersUrl, requestEntity);
-                            if (!CollectionUtils.isEmpty(clientRoleUsers)) {
-                                aggregated.addAll(mapAndFilterUsers(clientRoleUsers, username));
-                            }
-                        }
-                    }
+                    aggregated.addAll(aggregateUsersForClient(client, roleName, encodedRole, username, requestEntity));
                 }
-
-                first += pageSize;
             }
 
             return aggregated.stream().distinct().toList();
@@ -873,6 +853,35 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             LOGGER.debug("Error searching role across all clients: {}", e.getMessage());
             return Collections.emptyList();
         }
+    }
+
+    private List<Map<String, Object>> fetchClientsPage(int first, int pageSize, HttpEntity<String> requestEntity) {
+        String clientsUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_BASE + "?first=" + first + "&max=" + pageSize;
+        return fetchListOfMaps(clientsUrl, requestEntity);
+    }
+
+    private List<User> aggregateUsersForClient(Map<String, Object> client,
+                                               String roleName,
+                                               String encodedRole,
+                                               String username,
+                                               HttpEntity<String> requestEntity) {
+        Object idValue = client.get("id");
+        if (idValue == null) {
+            return Collections.emptyList();
+        }
+        String clientIdInternal = idValue.toString();
+
+        String rolesSearchUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_SLASH + clientIdInternal + ADMIN_ROLES_BASE + "?search=" + encodedRole;
+        List<Map<String, Object>> roles = fetchListOfMaps(rolesSearchUrl, requestEntity);
+        boolean hasExactMatch = roles.stream().anyMatch(r -> roleName.equals(r.get("name")));
+        if (!hasExactMatch) {
+            return Collections.emptyList();
+        }
+
+        String usersUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_SLASH + clientIdInternal + ADMIN_ROLES_SLASH + encodedRole + ADMIN_USERS_COLLECTION;
+        LOGGER.debug("Found matching role on client {}. Fetching users via: {}", clientIdInternal, usersUrl);
+        List<KeyCloakUser> clientRoleUsers = fetchUsers(usersUrl, requestEntity);
+        return CollectionUtils.isEmpty(clientRoleUsers) ? Collections.emptyList() : mapAndFilterUsers(clientRoleUsers, username);
     }
 
     private List<Map<String, Object>> fetchListOfMaps(String url, HttpEntity<String> requestEntity) {
