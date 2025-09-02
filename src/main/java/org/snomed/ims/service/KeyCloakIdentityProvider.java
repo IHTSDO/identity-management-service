@@ -131,6 +131,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
             HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
 
+            @SuppressWarnings("unchecked")
             Map<String, String> response = restTemplate.postForObject(REALMS + this.keycloakRealms + PROTOCOL_OPENID_CONNECT_TOKEN, request, HashMap.class);
             if (response == null) {
                 return null;
@@ -200,11 +201,11 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             if (CollectionUtils.isEmpty(users)) return Collections.emptyList();
 
             KeyCloakUser user = users.get(0);
-            ResponseEntity<Map> roleMappingsResponse = restTemplate.exchange(
+            ResponseEntity<Map<String, Object>> roleMappingsResponse = restTemplate.exchange(
                     ADMIN_REALMS + this.keycloakRealms + USERS + user.getId() + "/role-mappings",
                     HttpMethod.GET,
                     requestEntity,
-                    Map.class
+                    new ParameterizedTypeReference<Map<String, Object>>() {}
             );
 
             Map<String, Object> roleMappings = roleMappingsResponse.getBody();
@@ -212,18 +213,18 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
                 return Collections.emptyList();
             }
 
-            Map<String, Object> clientMappings = (HashMap) roleMappings.get("clientMappings");
+            Map<String, Object> clientMappings = (Map<String, Object>) roleMappings.get("clientMappings");
             if (clientMappings == null) {
                 return Collections.emptyList();
             }
 
             List<String> roles = new ArrayList<>();
             for (Map.Entry<String, Object> entry : clientMappings.entrySet()) {
-                Map<String, Object> value = (HashMap) entry.getValue();
-                List<Object> mappings = (ArrayList) value.get("mappings");
+                Map<String, Object> value = (Map<String, Object>) entry.getValue();
+                List<Object> mappings = (List<Object>) value.get("mappings");
                 if (mappings != null) {
                     for (Object object : mappings) {
-                        Map<String, String> map = (HashMap) object;
+                        Map<String, String> map = (Map<String, String>) object;
                         roles.add(AuthoritiesConstants.ROLE_PREFIX + map.get("name"));
                     }
                 }
@@ -583,6 +584,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             LOGGER.debug("Request body parameters: grant_type={}, scope={}, client_id={}, client_secret={}", 
                 "client_credentials", OPENID_PROFILE_EMAIL, username, "***");
 
+            @SuppressWarnings("unchecked")
             Map<String, String> response = restTemplate.postForObject(tokenUrl, request, HashMap.class);
             
             if (response == null) {
