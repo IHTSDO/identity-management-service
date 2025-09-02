@@ -1087,7 +1087,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         int first = 0;
         int pageSize = 100;
         while (true) {
-            String listTopLevelUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_GROUPS_BASE + "?first=" + first + "&max=" + pageSize;
+            String listTopLevelUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_GROUPS_BASE + QUERY_FIRST + first + QUERY_MAX + pageSize;
             List<Map<String, Object>> topGroups = fetchListOfMaps(listTopLevelUrl, requestEntity);
             if (CollectionUtils.isEmpty(topGroups)) break;
             for (Map<String, Object> group : topGroups) {
