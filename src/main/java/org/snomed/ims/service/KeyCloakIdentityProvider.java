@@ -1004,13 +1004,16 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
                                                        HttpEntity<String> requestEntity) {
         String realmRolesSearch = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_ROLES_BASE + QUERY_SEARCH + encodedRole + QUERY_EXACT_TRUE;
         List<Map<String, Object>> realmRoles = fetchListOfMaps(realmRolesSearch, requestEntity);
+        LOGGER.debug("Role fallback (realm): search URL: {}, roles returned: {}", realmRolesSearch, realmRoles != null ? realmRoles.size() : 0);
         List<User> aggregated = new ArrayList<>();
         for (Map<String, Object> role : realmRoles) {
             if (roleName.equals(role.get("name"))) {
                 Object roleId = role.get("id");
+                LOGGER.debug("Role fallback (realm): exact match '{}' with roleId: {}", roleName, roleId);
                 aggregated.addAll(fetchUsersFromGroupsForRoleId(roleId != null ? roleId.toString() : null, username, requestEntity));
             }
         }
+        LOGGER.debug("Role fallback (realm): aggregated users: {}", aggregated.size());
         return aggregated;
     }
 
@@ -1023,9 +1026,11 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             List<Map<String, Object>> clients = fetchClientsPage(first, 100, requestEntity);
             if (CollectionUtils.isEmpty(clients)) break;
             for (Map<String, Object> client : clients) {
-                aggregated.addAll(collectUsersForClientRoleName(client, roleName, encodedRole, username, requestEntity));
+                List<User> clientUsers = collectUsersForClientRoleName(client, roleName, encodedRole, username, requestEntity);
+                aggregated.addAll(clientUsers);
             }
         }
+        LOGGER.debug("Role fallback (clients): aggregated users across clients: {}", aggregated.size());
         return aggregated;
     }
 
@@ -1039,13 +1044,16 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         String clientIdInternal = idValue.toString();
         String rolesSearchUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_SLASH + clientIdInternal + ADMIN_ROLES_BASE + QUERY_SEARCH + encodedRole + QUERY_EXACT_TRUE;
         List<Map<String, Object>> roles = fetchListOfMaps(rolesSearchUrl, requestEntity);
+        LOGGER.debug("Role fallback (client {}): roles search URL: {}, roles returned: {}", clientIdInternal, rolesSearchUrl, roles != null ? roles.size() : 0);
         List<User> aggregated = new ArrayList<>();
         for (Map<String, Object> role : roles) {
             if (roleName.equals(role.get("name"))) {
                 Object roleId = role.get("id");
+                LOGGER.debug("Role fallback (client {}): exact match '{}' with roleId: {}", clientIdInternal, roleName, roleId);
                 aggregated.addAll(fetchUsersFromGroupsForRoleId(roleId != null ? roleId.toString() : null, username, requestEntity));
             }
         }
+        LOGGER.debug("Role fallback (client {}): users aggregated: {}", clientIdInternal, aggregated.size());
         return aggregated;
     }
 
@@ -1057,6 +1065,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         // Roles-by-id group mappings endpoint
         String groupMappingsUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_ROLES_BY_ID + roleId + ADMIN_GROUPS_BASE;
         List<Map<String, Object>> groups = fetchListOfMaps(groupMappingsUrl, requestEntity);
+        LOGGER.debug("Role fallback (groups-by-roleId): url: {}, groups found: {}", groupMappingsUrl, groups != null ? groups.size() : 0);
         if (CollectionUtils.isEmpty(groups)) return Collections.emptyList();
 
         List<User> aggregated = new ArrayList<>();
@@ -1078,6 +1087,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         // Members of group
         String membersUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_GROUPS_SLASH + groupId + ADMIN_USERS_COLLECTION + "?max=-1";
         List<KeyCloakUser> members = fetchUsers(membersUrl, requestEntity);
+        LOGGER.debug("Role fallback (group members): groupId: {}, members fetched: {}", groupId, members != null ? members.size() : 0);
         if (!CollectionUtils.isEmpty(members)) {
             aggregated.addAll(mapAndFilterUsers(members, username));
         }
