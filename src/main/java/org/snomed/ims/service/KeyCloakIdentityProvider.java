@@ -627,7 +627,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
     private List<KeyCloakGroup> findGroupByName(String groupName, HttpEntity<String> requestEntity) {
         try {
             // Search for groups by name using Keycloak admin API
-            String searchGroupUrl = ADMIN_REALMS + this.keycloakRealms + ADMIN_GROUPS_BASE + QUERY_SEARCH + groupName + QUERY_EXACT_TRUE;
+            String searchGroupUrl = ADMIN_REALMS + this.keycloakRealms + ADMIN_GROUPS_BASE + QUERY_SEARCH + groupName;
             String fullSearchGroupUrl = keycloakUrl + searchGroupUrl;
             LOGGER.debug("Searching for group by name: {} at URL: {}", groupName, fullSearchGroupUrl);
             
@@ -642,7 +642,8 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             List<KeyCloakGroup> groups = groupResponse.getBody();
             if (CollectionUtils.isEmpty(groups)) {
                 LOGGER.debug("No group found with name: {}", groupName);
-                return Collections.emptyList();
+                // Fallback to deep traversal of group tree
+                return deepSearchGroupsByName(groupName, requestEntity);
             }
             
             // Filter to exact match since search might return partial matches
@@ -651,11 +652,63 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
                     .toList();
             
             LOGGER.debug("Found {} exact matches for group name: {}", exactMatches.size(), groupName);
-            return exactMatches;
+            if (!exactMatches.isEmpty()) {
+                return exactMatches;
+            }
+
+            // If we didn't get an exact match, walk the hierarchy just in case the search didn't return the nested node
+            return deepSearchGroupsByName(groupName, requestEntity);
             
         } catch (Exception e) {
             LOGGER.error("Failed to find group by name: {}, Error: {}", groupName, e.getMessage(), e);
             return Collections.emptyList();
+        }
+    }
+
+    private List<KeyCloakGroup> deepSearchGroupsByName(String targetName, HttpEntity<String> requestEntity) {
+        LOGGER.debug("Deep searching all groups for exact name: {}", targetName);
+        List<KeyCloakGroup> matches = new ArrayList<>();
+        int first = 0;
+        int pageSize = 100;
+        while (true) {
+            String listTopLevelUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_GROUPS_BASE + "?first=" + first + "&max=" + pageSize;
+            List<Map<String, Object>> topGroups = fetchListOfMaps(listTopLevelUrl, requestEntity);
+            if (CollectionUtils.isEmpty(topGroups)) break;
+            for (Map<String, Object> group : topGroups) {
+                addIfNameMatch(group, targetName, matches);
+                Object id = group.get("id");
+                if (id != null) {
+                    traverseChildrenForName(id.toString(), targetName, requestEntity, matches);
+                }
+            }
+            first += pageSize;
+        }
+        return matches;
+    }
+
+    private void traverseChildrenForName(String parentGroupId,
+                                         String targetName,
+                                         HttpEntity<String> requestEntity,
+                                         List<KeyCloakGroup> matches) {
+        String childrenUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_GROUPS_SLASH + parentGroupId + "/children";
+        List<Map<String, Object>> children = fetchListOfMaps(childrenUrl, requestEntity);
+        for (Map<String, Object> child : children) {
+            addIfNameMatch(child, targetName, matches);
+            Object childId = child.get("id");
+            if (childId != null) {
+                traverseChildrenForName(childId.toString(), targetName, requestEntity, matches);
+            }
+        }
+    }
+
+    private void addIfNameMatch(Map<String, Object> groupMap, String targetName, List<KeyCloakGroup> matches) {
+        Object name = groupMap.get("name");
+        if (name != null && targetName.equals(name.toString())) {
+            KeyCloakGroup g = new KeyCloakGroup();
+            Object id = groupMap.get("id");
+            g.setId(id != null ? id.toString() : null);
+            g.setName(name.toString());
+            matches.add(g);
         }
     }
 
