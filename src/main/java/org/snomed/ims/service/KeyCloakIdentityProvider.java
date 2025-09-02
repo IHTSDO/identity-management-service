@@ -1050,11 +1050,76 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             if (roleName.equals(role.get("name"))) {
                 Object roleId = role.get("id");
                 LOGGER.debug("Role fallback (client {}): exact match '{}' with roleId: {}", clientIdInternal, roleName, roleId);
-                aggregated.addAll(fetchUsersFromGroupsForRoleId(roleId != null ? roleId.toString() : null, username, requestEntity));
+                // Try client-role -> groups endpoint first, then fallback to scanning all groups' client role-mappings
+                List<User> usersFromClientRoleGroups = fetchUsersFromGroupsForClientRole(clientIdInternal, roleName, username, requestEntity);
+                aggregated.addAll(usersFromClientRoleGroups);
             }
         }
         LOGGER.debug("Role fallback (client {}): users aggregated: {}", clientIdInternal, aggregated.size());
         return aggregated;
+    }
+
+    private List<User> fetchUsersFromGroupsForClientRole(String clientIdInternal,
+                                                         String roleName,
+                                                         String username,
+                                                         HttpEntity<String> requestEntity) {
+        // 1) Attempt: direct groups listing for this client role (if supported by KC version)
+        String encodedRole = URLEncoder.encode(roleName, StandardCharsets.UTF_8);
+        String groupsUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_SLASH + clientIdInternal + ADMIN_ROLES_SLASH + encodedRole + "/groups";
+        List<Map<String, Object>> groups = fetchListOfMaps(groupsUrl, requestEntity);
+        LOGGER.debug("Role fallback (client-role groups): url: {}, groups size: {}", groupsUrl, groups != null ? groups.size() : 0);
+        List<User> aggregated = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(groups)) {
+            for (Map<String, Object> group : groups) {
+                Object gid = group.get("id");
+                if (gid != null) {
+                    aggregated.addAll(fetchUsersForGroupAndDescendants(gid.toString(), username, requestEntity));
+                }
+            }
+            return aggregated;
+        }
+
+        // 2) Fallback: scan all groups and inspect their client role-mappings
+        LOGGER.debug("Role fallback (client-role groups): direct endpoint returned none; scanning group role-mappings for client {} and role {}", clientIdInternal, roleName);
+        int first = 0;
+        int pageSize = 100;
+        while (true) {
+            String listTopLevelUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_GROUPS_BASE + "?first=" + first + "&max=" + pageSize;
+            List<Map<String, Object>> topGroups = fetchListOfMaps(listTopLevelUrl, requestEntity);
+            if (CollectionUtils.isEmpty(topGroups)) break;
+            for (Map<String, Object> group : topGroups) {
+                Object id = group.get("id");
+                if (id != null) {
+                    collectUsersIfGroupHasClientRole(id.toString(), clientIdInternal, roleName, username, requestEntity, aggregated);
+                }
+            }
+            first += pageSize;
+        }
+        return aggregated;
+    }
+
+    private void collectUsersIfGroupHasClientRole(String groupId,
+                                                  String clientIdInternal,
+                                                  String roleName,
+                                                  String username,
+                                                  HttpEntity<String> requestEntity,
+                                                  List<User> aggregated) {
+        String mappingUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_GROUPS_SLASH + groupId + "/role-mappings/clients/" + clientIdInternal;
+        List<Map<String, Object>> mappings = fetchListOfMaps(mappingUrl, requestEntity);
+        boolean hasRole = mappings.stream().anyMatch(r -> roleName.equals(r.get("name")));
+        if (hasRole) {
+            LOGGER.debug("Role fallback (scan): group {} has client role {} -> collecting members (and descendants)", groupId, roleName);
+            aggregated.addAll(fetchUsersForGroupAndDescendants(groupId, username, requestEntity));
+        }
+        // Recurse children regardless; cheaper than fetching child mapping only if parent matched
+        String childrenUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_GROUPS_SLASH + groupId + "/children";
+        List<Map<String, Object>> children = fetchListOfMaps(childrenUrl, requestEntity);
+        for (Map<String, Object> child : children) {
+            Object childId = child.get("id");
+            if (childId != null) {
+                collectUsersIfGroupHasClientRole(childId.toString(), clientIdInternal, roleName, username, requestEntity, aggregated);
+            }
+        }
     }
 
     private List<User> fetchUsersFromGroupsForRoleId(String roleId,
