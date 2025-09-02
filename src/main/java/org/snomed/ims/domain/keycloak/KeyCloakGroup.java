@@ -1,7 +1,6 @@
 package org.snomed.ims.domain.keycloak;
 
 import java.io.Serializable;
-import java.util.List;
 
 /**
  * Group response from Keycloak.
