@@ -9,8 +9,8 @@
         <version>3.12.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>ims-keycloak</artifactId>
-    <version>4.0.0-SNAPSHOT</version>
+    <artifactId>identity-management-service</artifactId>
+    <version>4.0.0-</version>
     <description>Web API providing single sign-on authentication and authorisation, built on top of Atlassian Crowd.</description>
     <packaging>jar</packaging>
 
