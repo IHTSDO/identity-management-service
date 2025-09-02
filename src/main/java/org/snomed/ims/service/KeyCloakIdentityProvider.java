@@ -33,6 +33,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
     private static final String ADMIN_ROLES_BASE = "/roles";
     private static final String ADMIN_ROLES_SLASH = "/roles/";
     private static final String ADMIN_USERS_COLLECTION = "/users";
+    private static final String ADMIN_GROUPS_MEMBERS = "/members";
     private static final String ADMIN_COMPOSITES = "/composites";
     private static final String ADMIN_ROLES_BY_ID = "/roles-by-id/";
     private static final String ADMIN_GROUPS_BASE = "/groups";
@@ -721,7 +722,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
                 .flatMap(group -> {
                     LOGGER.debug("Getting members for group: {} (ID: {})", group.getName(), group.getId());
                     
-                    String groupMembersUrl = ADMIN_REALMS + this.keycloakRealms + ADMIN_GROUPS_SLASH + group.getId() + "/members?max=-1";
+                    String groupMembersUrl = ADMIN_REALMS + this.keycloakRealms + ADMIN_GROUPS_SLASH + group.getId() + ADMIN_GROUPS_MEMBERS + "?max=-1";
                     String fullGroupMembersUrl = keycloakUrl + groupMembersUrl;
                     LOGGER.debug("Making request to get group members from: {}", fullGroupMembersUrl);
                     
@@ -1153,7 +1154,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
                                                         HttpEntity<String> requestEntity) {
         List<User> aggregated = new ArrayList<>();
         // Members of group
-        String membersUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_GROUPS_SLASH + groupId + ADMIN_USERS_COLLECTION + "?max=-1";
+        String membersUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_GROUPS_SLASH + groupId + ADMIN_GROUPS_MEMBERS + "?max=-1";
         List<KeyCloakUser> members = fetchUsers(membersUrl, requestEntity);
         LOGGER.debug("Role fallback (group members): groupId: {}, members fetched: {}", groupId, members != null ? members.size() : 0);
         if (!CollectionUtils.isEmpty(members)) {
