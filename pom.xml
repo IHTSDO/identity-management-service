@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>identity-management-service</artifactId>
-    <version>4.0.0-</version>
+    <version>4.0.0</version>
     <description>Web API providing single sign-on authentication and authorisation, built on top of Atlassian Crowd.</description>
     <packaging>jar</packaging>
 
