@@ -19,9 +19,7 @@ import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import jakarta.servlet.http.HttpSession;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+// Unused imports removed
 
 @RestController
 @Tag(name = "AuthController")
