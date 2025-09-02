@@ -39,6 +39,9 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
     private static final String ADMIN_GROUPS_SLASH = "/groups/";
     private static final String QUERY_SEARCH = "?search=";
     private static final String QUERY_EXACT_TRUE = "&exact=true";
+    private static final String QUERY_FIRST = "?first=";
+    private static final String QUERY_MAX = "&max=";
+    private static final String ADMIN_GROUPS_CHILDREN = "/children";
     public static final String CLIENT_ID = "client_id";
     public static final String CLIENT_SECRET = "client_secret";
     public static final String GRANT_TYPE = "grant_type";
@@ -671,7 +674,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         int first = 0;
         int pageSize = 100;
         while (true) {
-            String listTopLevelUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_GROUPS_BASE + "?first=" + first + "&max=" + pageSize;
+            String listTopLevelUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_GROUPS_BASE + QUERY_FIRST + first + QUERY_MAX + pageSize;
             List<Map<String, Object>> topGroups = fetchListOfMaps(listTopLevelUrl, requestEntity);
             if (CollectionUtils.isEmpty(topGroups)) break;
             for (Map<String, Object> group : topGroups) {
@@ -690,7 +693,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
                                          String targetName,
                                          HttpEntity<String> requestEntity,
                                          List<KeyCloakGroup> matches) {
-        String childrenUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_GROUPS_SLASH + parentGroupId + "/children";
+        String childrenUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_GROUPS_SLASH + parentGroupId + ADMIN_GROUPS_CHILDREN;
         List<Map<String, Object>> children = fetchListOfMaps(childrenUrl, requestEntity);
         for (Map<String, Object> child : children) {
             addIfNameMatch(child, targetName, matches);
@@ -921,7 +924,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
     }
 
     private List<Map<String, Object>> fetchClientsPage(int first, int pageSize, HttpEntity<String> requestEntity) {
-        String clientsUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_BASE + "?first=" + first + "&max=" + pageSize;
+        String clientsUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_BASE + QUERY_FIRST + first + QUERY_MAX + pageSize;
         return fetchListOfMaps(clientsUrl, requestEntity);
     }
 
@@ -1065,7 +1068,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
                                                          HttpEntity<String> requestEntity) {
         // 1) Attempt: direct groups listing for this client role (if supported by KC version)
         String encodedRole = URLEncoder.encode(roleName, StandardCharsets.UTF_8);
-        String groupsUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_SLASH + clientIdInternal + ADMIN_ROLES_SLASH + encodedRole + "/groups";
+        String groupsUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_CLIENTS_SLASH + clientIdInternal + ADMIN_ROLES_SLASH + encodedRole + ADMIN_GROUPS_BASE;
         List<Map<String, Object>> groups = fetchListOfMaps(groupsUrl, requestEntity);
         LOGGER.debug("Role fallback (client-role groups): url: {}, groups size: {}", groupsUrl, groups != null ? groups.size() : 0);
         List<User> aggregated = new ArrayList<>();
@@ -1112,7 +1115,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             aggregated.addAll(fetchUsersForGroupAndDescendants(groupId, username, requestEntity));
         }
         // Recurse children regardless; cheaper than fetching child mapping only if parent matched
-        String childrenUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_GROUPS_SLASH + groupId + "/children";
+        String childrenUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_GROUPS_SLASH + groupId + ADMIN_GROUPS_CHILDREN;
         List<Map<String, Object>> children = fetchListOfMaps(childrenUrl, requestEntity);
         for (Map<String, Object> child : children) {
             Object childId = child.get("id");
@@ -1158,7 +1161,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         }
 
         // Recurse into subgroups
-        String childrenUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_GROUPS_SLASH + groupId + "/children";
+        String childrenUrl = keycloakUrl + ADMIN_REALMS + this.keycloakRealms + ADMIN_GROUPS_SLASH + groupId + ADMIN_GROUPS_CHILDREN;
         List<Map<String, Object>> children = fetchListOfMaps(childrenUrl, requestEntity);
         for (Map<String, Object> child : children) {
             Object childId = child.get("id");
