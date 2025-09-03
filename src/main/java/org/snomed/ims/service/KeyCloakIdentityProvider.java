@@ -381,7 +381,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             LOGGER.debug("Password updated for user {} via account API", user.getLogin());
         } catch (Exception e) {
             LOGGER.error("Failed to update password for user {} via account API", user.getLogin(), e);
-            throw new RuntimeException("Failed to update password", e);
+            throw new RuntimeServiceException("Failed to update password for user " + user.getLogin(), e);
         }
     }
 
