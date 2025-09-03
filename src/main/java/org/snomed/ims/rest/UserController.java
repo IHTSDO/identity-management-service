@@ -88,7 +88,21 @@ public class UserController {
 		if (user == null) {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		} else {
-			identityProvider.resetUserPassword(user, requestBody.newPassword());
+			String token = null;
+			Cookie[] cookies = request.getCookies();
+			if (cookies != null) {
+				for (Cookie cookie : cookies) {
+					if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
+						token = cookie.getValue();
+						break;
+					}
+				}
+			}
+			if (identityProvider instanceof KeyCloakIdentityProvider && token != null && !token.isEmpty()) {
+				((KeyCloakIdentityProvider) identityProvider).resetUserPasswordWithToken(user, requestBody.newPassword(), token, requestBody.currentPassword());
+			} else {
+				identityProvider.resetUserPassword(user, requestBody.newPassword());
+			}
 			return new ResponseEntity<>(HttpStatus.OK);
 		}
 	}

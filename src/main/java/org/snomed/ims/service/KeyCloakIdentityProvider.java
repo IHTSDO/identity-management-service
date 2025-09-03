@@ -353,6 +353,38 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
         throw new UnsupportedOperationException("Password reset is not supported via API.");
     }
 
+    /**
+     * Change the current user's password using their own bearer token via the Keycloak Account API.
+     * This avoids using the admin API and respects user self-service password changes.
+     */
+    public void resetUserPasswordWithToken(User user, String newPassword, String bearerToken, String currentPassword) {
+        if (user == null || newPassword == null || newPassword.isEmpty() || bearerToken == null || bearerToken.isEmpty()) {
+            LOGGER.warn("resetUserPasswordWithToken called with invalid arguments: user={}, newPasswordEmpty={}, tokenPresent={}",
+                    user != null, newPassword == null || newPassword.isEmpty(), bearerToken != null && !bearerToken.isEmpty());
+            throw new IllegalArgumentException("Invalid arguments for password reset");
+        }
+
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(bearerToken);
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("currentPassword", currentPassword == null ? "" : currentPassword);
+            body.put("newPassword", newPassword);
+            body.put("confirmPassword", newPassword);
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+
+            String url = REALMS + this.keycloakRealms + "/account/credentials/password";
+            restTemplate.exchange(url, HttpMethod.POST, entity, Void.class);
+            LOGGER.debug("Password updated for user {} via account API", user.getLogin());
+        } catch (Exception e) {
+            LOGGER.error("Failed to update password for user {} via account API", user.getLogin(), e);
+            throw new RuntimeException("Failed to update password", e);
+        }
+    }
+
     @Override
     public String buildAuthorizationUrl(String redirectUri, boolean promptNone) {
         LOGGER.debug("Building authorization URL");
