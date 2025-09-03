@@ -380,8 +380,7 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             restTemplate.exchange(url, HttpMethod.POST, entity, Void.class);
             LOGGER.debug("Password updated for user {} via account API", user.getLogin());
         } catch (Exception e) {
-            LOGGER.error("Failed to update password for user {} via account API", user.getLogin(), e);
-            throw new RuntimeServiceException("Failed to update password for user " + user.getLogin(), e);
+            throw new RuntimeServiceException("Failed to update password for user " + user.getLogin() + " via account API", e);
         }
     }
 
