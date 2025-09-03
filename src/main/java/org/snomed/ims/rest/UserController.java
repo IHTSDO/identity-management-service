@@ -59,17 +59,7 @@ public class UserController {
 		if (user == null) {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		} else {
-			String token = null;
-			Cookie[] cookies = request.getCookies();
-			if (cookies != null) {
-				for (Cookie cookie : cookies) {
-					if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
-						// Get the opaque token from the cookie (no decompression needed)
-						token = cookie.getValue();
-						break;
-					}
-				}
-			}
+			String token = extractTokenFromCookies(request);
 			return new ResponseEntity<>(identityProvider.updateUser(user, requestBody, token), HttpStatus.OK);
 		}
 	}
@@ -88,21 +78,8 @@ public class UserController {
 		if (user == null) {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		} else {
-			String token = null;
-			Cookie[] cookies = request.getCookies();
-			if (cookies != null) {
-				for (Cookie cookie : cookies) {
-					if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
-						token = cookie.getValue();
-						break;
-					}
-				}
-			}
-			if (identityProvider instanceof KeyCloakIdentityProvider && token != null && !token.isEmpty()) {
-				((KeyCloakIdentityProvider) identityProvider).resetUserPasswordWithToken(user, requestBody.newPassword(), token, requestBody.currentPassword());
-			} else {
-				identityProvider.resetUserPassword(user, requestBody.newPassword());
-			}
+			String token = extractTokenFromCookies(request);
+			resetPassword(user, requestBody, token);
 			return new ResponseEntity<>(HttpStatus.OK);
 		}
 	}
@@ -124,8 +101,8 @@ public class UserController {
 						String token = cookie.getValue();
 						
 						// Introspect the token to get user information
-						if (identityProvider instanceof KeyCloakIdentityProvider) {
-							user = ((KeyCloakIdentityProvider) identityProvider).introspectToken(token);
+						if (identityProvider instanceof KeyCloakIdentityProvider keyCloakProvider) {
+							user = keyCloakProvider.introspectToken(token);
 						} else {
 							// Fallback to existing method for other identity providers
 							user = identityProvider.getUserByToken(token);
@@ -142,6 +119,26 @@ public class UserController {
 			}
 		}
 		return user;
+	}
+
+	private String extractTokenFromCookies(HttpServletRequest request) {
+		Cookie[] cookies = request.getCookies();
+		if (cookies != null) {
+			for (Cookie cookie : cookies) {
+				if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
+					return cookie.getValue();
+				}
+			}
+		}
+		return null;
+	}
+
+	private void resetPassword(User user, UserPasswordUpdateRequest requestBody, String token) {
+		if (identityProvider instanceof KeyCloakIdentityProvider keyCloakProvider && token != null && !token.isEmpty()) {
+			keyCloakProvider.resetUserPasswordWithToken(user, requestBody.newPassword(), token, requestBody.currentPassword());
+		} else {
+			identityProvider.resetUserPassword(user, requestBody.newPassword());
+		}
 	}
 
 }
