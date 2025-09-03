@@ -1,4 +1,4 @@
 package org.snomed.ims.domain;
 
-public record UserPasswordUpdateRequest(String newPassword) {
+public record UserPasswordUpdateRequest(String currentPassword, String newPassword) {
 }
