@@ -17,6 +17,7 @@ class VersionControllerTest extends IntegrationTest {
 
 		// then
 		assertEquals(200, status);
-		assertTrue(body.contains("@project.version@"));
+		assertTrue(body.contains("version"));
+		assertTrue(body.contains("time"));
 	}
 }

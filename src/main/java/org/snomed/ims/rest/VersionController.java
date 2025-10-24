@@ -1,27 +1,30 @@
 package org.snomed.ims.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.snomed.ims.config.ApplicationProperties;
+import org.snomed.ims.domain.BuildVersion;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.info.BuildProperties;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.Instant;
-import java.util.Map;
-
 @RestController
-@Tag(name = "VersionController")
+@Tag(name = "Version", description = "Build Version")
 public class VersionController {
-	private final ApplicationProperties applicationProperties;
 
-	public VersionController(ApplicationProperties applicationProperties) {
-		this.applicationProperties = applicationProperties;
+	private final BuildProperties buildProperties;
+
+	@Autowired
+	VersionController(BuildProperties buildProperties) {
+		this.buildProperties = buildProperties;
 	}
 
+	@Operation(summary = "Software build version and timestamp.")
 	@GetMapping(value = "/version", produces = "application/json")
-	public Map<String, String> getVersion() {
-		String projectVersion = applicationProperties.getProjectVersion();
-		String time = Instant.now().toString();
-
-		return Map.of("version", projectVersion, "time", time);
+	public BuildVersion getBuildInformation() {
+		if (buildProperties == null) {
+			throw new IllegalStateException("Build properties are not present.");
+		}
+		return new BuildVersion(buildProperties.getVersion(), buildProperties.getTime().toString());
 	}
 }

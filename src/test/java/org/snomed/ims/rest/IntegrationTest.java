@@ -7,6 +7,7 @@ import org.snomed.ims.config.ApplicationProperties;
 import org.snomed.ims.service.IdentityProvider;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.info.BuildProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
@@ -19,8 +20,6 @@ import java.util.Collection;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
 
 @ActiveProfiles("test") // Use application-test.properties
 @ContextConfiguration
@@ -28,9 +27,11 @@ import static org.mockito.Mockito.when;
 class IntegrationTest {
 	protected IdentityProvider identityProvider = mock(IdentityProvider.class);
 
-
 	@Autowired
 	protected ApplicationProperties applicationProperties;
+
+	@Autowired
+	protected BuildProperties buildProperties;
 
 	protected MockMvc mockMvc;
 
@@ -38,7 +39,7 @@ class IntegrationTest {
 	void setUp() {
 		AccountController accountController = new AccountController(identityProvider, applicationProperties);
 		AuthController authController = new AuthController(identityProvider, applicationProperties);
-		VersionController versionController = new VersionController(applicationProperties);
+		VersionController versionController = new VersionController(buildProperties);
 
 		this.mockMvc = MockMvcBuilders
 				.standaloneSetup(accountController, authController, versionController)

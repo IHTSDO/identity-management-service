@@ -5,6 +5,7 @@ import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
 import org.springdoc.core.models.GroupedOpenApi;
+import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,10 +15,13 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class SwaggerConfiguration implements WebMvcConfigurer {
+
+	private final BuildProperties buildProperties;
 	private final ApplicationProperties applicationProperties;
 
-	public SwaggerConfiguration(ApplicationProperties applicationProperties) {
+	public SwaggerConfiguration(ApplicationProperties applicationProperties, BuildProperties buildProperties) {
 		this.applicationProperties = applicationProperties;
+		this.buildProperties = buildProperties;
 	}
 
 	@Bean
@@ -30,11 +34,12 @@ public class SwaggerConfiguration implements WebMvcConfigurer {
 
 	@Bean
 	public OpenAPI apiInfo() {
+		final String version = buildProperties != null ? buildProperties.getVersion() : "DEV";
 		return new OpenAPI()
 				.info(new Info()
 						.title(applicationProperties.getProjectName())
 						.description(applicationProperties.getProjectDescription())
-						.version(applicationProperties.getProjectVersion())
+						.version(version)
 						.contact(new Contact().name("SNOMED International").url("https://www.snomed.org"))
 						.license(new License().name("Apache 2.0").url("https://www.apache.org/licenses/LICENSE-2.0")))
 				.externalDocs(new ExternalDocumentation()
