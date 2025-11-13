@@ -1,8 +1,8 @@
 package org.snomed.ims.config;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -41,8 +41,18 @@ public class WebSecurityConfig {
 			}
 
 			// Endpoints closed by basic
-			http.httpBasic(Customizer.withDefaults());
 			http.authorizeHttpRequests(auth -> auth.anyRequest().authenticated());
+
+			// Configure exception handling to prevent Basic Auth popup
+			// Returns JSON response instead of triggering browser Basic Auth popup
+			http.exceptionHandling(exceptions -> exceptions
+					.authenticationEntryPoint((request, response, authException) -> {
+						response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+						response.setContentType("application/json;charset=UTF-8");
+						String message = authException.getMessage() != null ? authException.getMessage().replace("\"", "\\\"") : "Authentication required";
+						response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"" + message + "\"}");
+					})
+			);
 		}
 
 		return http.build();
