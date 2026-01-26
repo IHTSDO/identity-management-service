@@ -418,8 +418,13 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
                 return null;
             }
             
-            // Log the full introspection response for debugging
-            LOGGER.debug("Token introspection response body: {}", body);
+            // Log the full introspection response for debugging (with sensitive data masked)
+            Map<String, Object> sanitizedBody = new HashMap<>(body);
+            // Mask any token-related fields
+            sanitizedBody.computeIfPresent(ACCESS_TOKEN, (k, v) -> "***");
+            sanitizedBody.computeIfPresent(TOKEN, (k, v) -> "***");
+            sanitizedBody.computeIfPresent("jwt", (k, v) -> "***");
+            LOGGER.debug("Token introspection response body: {}", sanitizedBody);
             
             // Check if token is active
             Boolean active = (Boolean) body.get("active");
