@@ -241,62 +241,71 @@ public class KeyCloakIdentityProvider implements IdentityProvider {
             LOGGER.debug("Group name is null or empty, returning empty list");
             return Collections.emptyList();
         }
-        
-        LOGGER.debug("Searching for users in group: {}, currentUserId: {}, username filter: {}, maxResults: {}, startAt: {}", 
-            groupName, currentUserId, username, maxResults, startAt);
-        
+
+        LOGGER.debug("Searching for users in group: {}, currentUserId: {}, username filter: {}, maxResults: {}, startAt: {}",
+                groupName, currentUserId, username, maxResults, startAt);
+
         String adminToken = getAdminToken();
         if (adminToken == null || adminToken.isEmpty()) {
             LOGGER.error("Cannot search users by group - no admin token available");
             return Collections.emptyList();
         }
-        
+
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
         HttpEntity<String> requestEntity = new HttpEntity<>(headers);
-        
+
         try {
             // Since we have admin credentials (adminToken), we can search any group directly
             // No need to check current user's group membership when using admin access
             LOGGER.debug("Using admin credentials to search for group directly: {}", groupName);
             List<KeyCloakGroup> keyCloakGroups = findGroupByName(groupName, requestEntity);
-            
+
             if (CollectionUtils.isEmpty(keyCloakGroups)) {
                 LOGGER.debug("Group not found: {}. Falling back to role search.", groupName);
                 List<User> usersByRole = getUsersForRole(groupName, username, requestEntity);
-                if (!CollectionUtils.isEmpty(usersByRole)) {
-                    if (startAt >= 0 && startAt < usersByRole.size()) {
-                        int toIndex = Math.min(startAt + maxResults, usersByRole.size());
-                        List<User> paginatedUsers = usersByRole.subList(startAt, toIndex);
-                        LOGGER.debug("Returning paginated users by role: {} to {} (total: {})", startAt, toIndex - 1, paginatedUsers.size());
-                        return paginatedUsers;
-                    }
-                    LOGGER.debug("No users found after pagination for role search");
-                    return Collections.emptyList();
-                }
-                return Collections.emptyList();
+                return paginateUsers(usersByRole, maxResults, startAt, "role search");
             }
-            
+
             LOGGER.debug("Found {} groups for admin search", keyCloakGroups.size());
             keyCloakGroups.forEach(group -> LOGGER.debug("Group: {} (ID: {})", group.getName(), group.getId()));
-            
+
             List<User> users = getUsersForGroup(groupName, username, keyCloakGroups, requestEntity);
             LOGGER.debug("Retrieved {} users for group: {}", users.size(), groupName);
-            
-            if (startAt >= 0 && startAt < users.size()) {
-                int toIndex = Math.min(startAt + maxResults, users.size());
-                List<User> paginatedUsers = users.subList(startAt, toIndex);
-                LOGGER.debug("Returning paginated users: {} to {} (total: {})", startAt, toIndex - 1, paginatedUsers.size());
-                return paginatedUsers;
-            }
-            
-            LOGGER.debug("No users found after pagination");
-            return Collections.emptyList();
+            return paginateUsers(users, maxResults, startAt, "group search");
+
         } catch (Exception e) {
-            LOGGER.error("620cdd4c-f4c4-4105-8ebd-96b1925df746 Failed to get users by group name. Group: {}, CurrentUserId: {}, Error: {}", 
-                groupName, currentUserId, e.getMessage(), e);
+            LOGGER.error("620cdd4c-f4c4-4105-8ebd-96b1925df746 Failed to get users by group name. Group: {}, CurrentUserId: {}, Error: {}",
+                    groupName, currentUserId, e.getMessage(), e);
             return Collections.emptyList();
         }
+    }
+
+    private List<User> paginateUsers(List<User> users, int maxResults, int startAt, String context) {
+        if (CollectionUtils.isEmpty(users)) {
+            LOGGER.debug("No users found for {}", context);
+            return Collections.emptyList();
+        }
+
+        if (maxResults <= UNLIMITED) {
+            LOGGER.debug("Returning all {} users for {} (UNLIMITED requested)", users.size(), context);
+            return users;
+        }
+
+        if (maxResults == 0) {
+            LOGGER.debug("maxResults is 0 for {}, returning empty list", context);
+            return Collections.emptyList();
+        }
+
+        if (startAt < 0 || startAt >= users.size()) {
+            LOGGER.debug("Start index {} out of range for {} (size: {})", startAt, context, users.size());
+            return Collections.emptyList();
+        }
+
+        int toIndex = Math.min(startAt + maxResults, users.size());
+        List<User> paginatedUsers = users.subList(startAt, toIndex);
+        LOGGER.debug("Returning paginated users for {}: {} to {} (total: {})", context, startAt, toIndex - 1, paginatedUsers.size());
+        return paginatedUsers;
     }
 
     @Override

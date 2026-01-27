@@ -121,7 +121,9 @@ public class CrowdRestClient implements IdentityProvider {
 		if (groupName == null || groupName.isEmpty()) {
 			return Collections.emptyList();
 		}
-
+		if (maxResults <= UNLIMITED) {
+			throw new IllegalArgumentException("23c3ae74-7055-4fcc-a93f-a1bb103cd3c5 maxResults must be greater than or equal to 0");
+		}
 		Map<String, Object> params = new HashMap<>();
 		params.put("groupname", groupName);
 		params.put("maxResults", maxResults);

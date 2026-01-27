@@ -15,6 +15,8 @@ public interface IdentityProvider {
 	String DISPLAY_NAME = "display-name";
 	String EMAIL = "email";
 
+	int UNLIMITED = -1;
+
 	/**
 	 * Return token if authentication is successful; otherwise, return null.
 	 *
