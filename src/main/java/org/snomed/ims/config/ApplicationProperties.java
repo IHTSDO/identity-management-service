@@ -1,7 +1,13 @@
 package org.snomed.ims.config;
 
+import org.snomed.ims.service.AuthoritiesConstants;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Configuration
 public class ApplicationProperties {
@@ -55,6 +61,9 @@ public class ApplicationProperties {
 
 	@Value("${basic.auth.enabled}")
 	private String basicAuthEnabled;
+
+	@Value("${required.role.email.view}")
+	private String requiredRoleEmailView;
 
 	public String getProjectName() {
 		return projectName;
@@ -214,5 +223,37 @@ public class ApplicationProperties {
 
 	public boolean isBasicAuthEnabled() {
 		return "true".equals(basicAuthEnabled);
+	}
+
+	public String getRequiredRoleEmailView() {
+		return requiredRoleEmailView;
+	}
+
+	public void setRequiredRoleEmailView(String requiredRoleEmailView) {
+		this.requiredRoleEmailView = requiredRoleEmailView;
+	}
+
+	/**
+	 * Roles allowed to view user's email (comma-separated in config).
+	 * ROLE_ prefix is added if not present. Empty if not configured.
+	 */
+	public Set<String> getRequiredRoleEmailViewSet() {
+		if (requiredRoleEmailView == null || requiredRoleEmailView.isEmpty()) {
+			return Collections.emptySet();
+		}
+		return Arrays.stream(requiredRoleEmailView.split(","))
+				.map(String::trim)
+				.filter(s -> !s.isEmpty())
+				.map(ApplicationProperties::withRolePrefix)
+				.collect(Collectors.toSet());
+	}
+
+	private static String withRolePrefix(String role) {
+		if (role == null || role.isEmpty()) {
+			return role;
+		}
+		return role.startsWith(AuthoritiesConstants.ROLE_PREFIX)
+				? role
+				: AuthoritiesConstants.ROLE_PREFIX + role;
 	}
 }

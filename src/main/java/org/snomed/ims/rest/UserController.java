@@ -17,30 +17,50 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestClientException;
 
 import java.util.List;
+import java.util.Collection;
 
 @RestController
 @Tag(name = "UserController")
 public class UserController {
 
 	private final IdentityProvider identityProvider;
-
-
+	private final ApplicationProperties applicationProperties;
 	private final String cookieName;
 
 	public UserController(IdentityProvider identityProvider, ApplicationProperties applicationProperties) {
 		this.identityProvider = identityProvider;
+		this.applicationProperties = applicationProperties;
 		this.cookieName = applicationProperties.getCookieName();
 	}
 
 	@GetMapping(value = "/user", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseStatus(HttpStatus.OK)
-	public ResponseEntity<User> getUserDetails(@RequestParam String username) {
+	public ResponseEntity<User> getUserDetails(@RequestParam String username,
+			HttpServletRequest request, HttpServletResponse response) {
 		User user = identityProvider.getUser(username);
 		if (user == null) {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-		} else {
-			return new ResponseEntity<>(user, HttpStatus.OK);
 		}
+		User currentUser = getCurrentUser(request, response);
+		Collection<String> allowedRoles = applicationProperties.getRequiredRoleEmailViewSet();
+		boolean canViewEmail = allowedRoles.isEmpty() || (
+						currentUser != null &&
+						currentUser.getRoles() != null &&
+						currentUser.getRoles().stream().anyMatch(allowedRoles::contains));
+		if (!canViewEmail) {
+			user = cloneUserWithoutEmail(user);
+		}
+		return new ResponseEntity<>(user, HttpStatus.OK);
+	}
+
+	private User cloneUserWithoutEmail(User source) {
+		User copy = source.publicClone();
+		copy.setId(source.getId());
+		copy.setRoles(source.getRoles());
+		copy.setActive(source.getActive());
+		copy.setLangKey(source.getLangKey());
+		copy.setClientAccess(source.getClientAccess());
+		return copy;
 	}
 
 	/**
@@ -100,30 +120,30 @@ public class UserController {
 	}
 
 	private User getCurrentUser(HttpServletRequest request, HttpServletResponse response) {
-		User user = null;
 		Cookie[] cookies = request.getCookies();
-		if (cookies != null) {
-			for (Cookie cookie : cookies) {
-				if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
-					try {
-						// Get the opaque token from the cookie (no decompression needed)
-						String token = cookie.getValue();
-						
-						// Introspect the token to get user information
-						if (identityProvider instanceof KeyCloakIdentityProvider) {
-							user = ((KeyCloakIdentityProvider) identityProvider).introspectToken(token);
-						} else {
-							// Fallback to existing method for other identity providers
-							user = identityProvider.getUserByToken(token);
-						}
-					} catch (RestClientException ex) {
-						// invalidate cookie
-						cookie.setMaxAge(0);
-						cookie.setValue("");
-						cookie.setPath("/");
-						response.addCookie(cookie);
-						throw ex;
+		if (cookies == null) return null;
+
+		User user = null;
+		for (Cookie cookie : cookies) {
+			if (cookie.getName().equals(cookieName) && cookie.getMaxAge() != 0) {
+				try {
+					// Get the opaque token from the cookie (no decompression needed)
+					String token = cookie.getValue();
+
+					// Introspect the token to get user information
+					if (identityProvider instanceof KeyCloakIdentityProvider keyCloakProvider) {
+						user = keyCloakProvider.introspectToken(token);
+					} else {
+						// Fallback to existing method for other identity providers
+						user = identityProvider.getUserByToken(token);
 					}
+				} catch (RestClientException ex) {
+					// invalidate cookie
+					cookie.setMaxAge(0);
+					cookie.setValue("");
+					cookie.setPath("/");
+					response.addCookie(cookie);
+					throw ex;
 				}
 			}
 		}
