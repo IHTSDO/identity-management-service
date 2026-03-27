@@ -8,7 +8,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import java.util.List;
 
@@ -37,7 +36,7 @@ public class WebSecurityConfig {
 		if (applicationProperties.isBasicAuthEnabled()) {
 			// Endpoints open
 			for (String endpoint : PERMIT_ALL) {
-				http.authorizeHttpRequests(auth -> auth.requestMatchers(new AntPathRequestMatcher(endpoint)).permitAll());
+				http.authorizeHttpRequests(auth -> auth.requestMatchers(endpoint).permitAll());
 			}
 
 			// Endpoints closed by basic
