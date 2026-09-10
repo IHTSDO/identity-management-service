@@ -29,7 +29,7 @@ public class WebSecurityConfig {
 	}
 
 	@Bean
-	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+	public SecurityFilterChain securityFilterChain(HttpSecurity http) {
 		// Disable for API usage
 		http.csrf(AbstractHttpConfigurer::disable);
 

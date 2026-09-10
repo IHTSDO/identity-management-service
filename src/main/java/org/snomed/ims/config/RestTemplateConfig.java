@@ -21,7 +21,7 @@ public class RestTemplateConfig {
 	public RestTemplate crowdRestTemplate() {
 		LOGGER.info("Creating Crowd RestTemplate with rootUri: {}", applicationProperties.getCrowdApiUrl());
 		return new RestTemplateBuilder()
-				.rootUri(applicationProperties.getCrowdApiUrl())
+				.baseUri(applicationProperties.getCrowdApiUrl())
 				.basicAuthentication(applicationProperties.getCrowdApiAppName(), applicationProperties.getCrowdApiAppPassword())
 				.build();
 	}
@@ -30,7 +30,7 @@ public class RestTemplateConfig {
 	public RestTemplate keyCloakRestTemplate() {
 		LOGGER.info("Creating Keycloak RestTemplate with rootUri: {}", applicationProperties.getKeycloakUrl());
 		return new RestTemplateBuilder()
-				.rootUri(applicationProperties.getKeycloakUrl())
+				.baseUri(applicationProperties.getKeycloakUrl())
 				.build();
 	}
 }
