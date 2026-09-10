@@ -16,10 +16,10 @@ import java.util.List;
 @EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 public class WebSecurityConfig {
 	private static final List<String> PERMIT_ALL = List.of(
-			"version", // health check
-			"authenticate", // log in
-			"account", // allow passive /account to initiate OIDC check
-			"account/logout" // log out
+			"/version", // health check
+			"/authenticate", // log in
+			"/account", // allow passive /account to initiate OIDC check
+			"/account/logout" // log out
 	);
 
 	private final ApplicationProperties applicationProperties;
