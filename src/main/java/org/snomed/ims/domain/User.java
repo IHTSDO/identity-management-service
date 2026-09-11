@@ -2,7 +2,6 @@ package org.snomed.ims.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.io.Serializable;
 import java.util.List;
@@ -11,7 +10,6 @@ import java.util.Objects;
 /**
  * User response from Crowd.
  */
-@JsonSerialize(using = UserView.class)
 public class User implements Serializable {
 	private static final long serialVersionUID = 1L;
 
