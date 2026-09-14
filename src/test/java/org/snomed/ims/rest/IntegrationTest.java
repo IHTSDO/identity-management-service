@@ -27,6 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ContextConfiguration
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class IntegrationTest {
+	private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
+
 	@MockitoBean
 	protected IdentityProvider identityProvider;
 
@@ -101,10 +103,11 @@ class IntegrationTest {
 	}
 
 	protected JsonNode getBodyJson(ResultActions resultActions) {
+		String body = getBody(resultActions);
 		try {
-			return JsonMapper.builder().build().readTree(getBody(resultActions));
+			return JSON_MAPPER.readTree(body);
 		} catch (Exception e) {
-			return null;
+			throw new RuntimeException("Failed to parse response body as JSON: " + body, e);
 		}
 	}
 

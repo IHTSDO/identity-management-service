@@ -19,7 +19,7 @@ public class RestTemplateConfig {
 
 	@Bean(name = "crowd")
 	public RestTemplate crowdRestTemplate() {
-		LOGGER.info("Creating Crowd RestTemplate with rootUri: {}", applicationProperties.getCrowdApiUrl());
+		LOGGER.info("Creating Crowd RestTemplate with baseUri: {}", applicationProperties.getCrowdApiUrl());
 		return new RestTemplateBuilder()
 				.baseUri(applicationProperties.getCrowdApiUrl())
 				.basicAuthentication(applicationProperties.getCrowdApiAppName(), applicationProperties.getCrowdApiAppPassword())
@@ -28,7 +28,7 @@ public class RestTemplateConfig {
 
 	@Bean(name = "keycloak")
 	public RestTemplate keyCloakRestTemplate() {
-		LOGGER.info("Creating Keycloak RestTemplate with rootUri: {}", applicationProperties.getKeycloakUrl());
+		LOGGER.info("Creating Keycloak RestTemplate with baseUri: {}", applicationProperties.getKeycloakUrl());
 		return new RestTemplateBuilder()
 				.baseUri(applicationProperties.getKeycloakUrl())
 				.build();

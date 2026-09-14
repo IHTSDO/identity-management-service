@@ -14,10 +14,6 @@ public class UserView extends ObjectValueSerializer<User> {
 
 	@Override
 	protected void serializeObject(User user, JsonGenerator jsonGenerator, SerializationContext serializationContext) {
-		if (user == null) {
-			throw new IllegalArgumentException("656efb0d-d826-41ff-ad69-8b5d8a553e40 Cannot serialise User");
-		}
-
 		withPropertyNullable(jsonGenerator, "login", user.getLogin());
 		withPropertyNullable(jsonGenerator, "firstName", user.getFirstName());
 		withPropertyNullable(jsonGenerator, "lastName", user.getLastName());
