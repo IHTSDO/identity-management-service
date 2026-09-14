@@ -1,6 +1,5 @@
 package org.snomed.ims.domain;
 
-import org.springframework.boot.jackson.JacksonComponent;
 import org.springframework.boot.jackson.ObjectValueSerializer;
 import tools.jackson.core.JsonGenerator;
 import tools.jackson.databind.SerializationContext;
@@ -11,7 +10,6 @@ import java.util.List;
  * Control serialisation of User object. Sensitive information is omitted by default (through purpose lack of writing
  * values).
  */
-@JacksonComponent
 public class UserView extends ObjectValueSerializer<User> {
 
 	@Override
