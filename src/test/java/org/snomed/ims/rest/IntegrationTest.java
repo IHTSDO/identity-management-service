@@ -7,7 +7,6 @@ import org.snomed.ims.config.ApplicationProperties;
 import org.snomed.ims.service.IdentityProvider;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.info.BuildProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
@@ -37,20 +36,13 @@ class IntegrationTest {
 	@Autowired
 	protected ApplicationProperties applicationProperties;
 
-	@Autowired
-	protected BuildProperties buildProperties;
-
 	protected MockMvc mockMvc;
 
 	@BeforeEach
 	void setUp() {
-		AccountController accountController = new AccountController(identityProvider, applicationProperties);
-		AuthController authController = new AuthController(identityProvider, applicationProperties);
-		VersionController versionController = new VersionController(buildProperties);
-
-		this.mockMvc = MockMvcBuilders
-				.standaloneSetup(accountController, authController, versionController)
-				.build();
+		// Use the real application context so tests exercise the same message converters,
+		// controller advice and bean wiring as production.
+		this.mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
 	}
 
 	@Test

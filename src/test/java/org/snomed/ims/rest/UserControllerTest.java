@@ -1,12 +1,10 @@
 package org.snomed.ims.rest;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.snomed.ims.domain.User;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import tools.jackson.databind.JsonNode;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -16,12 +14,6 @@ import static org.mockito.Mockito.when;
 		"basic.auth.enabled=false"
 })
 class UserControllerTest extends IntegrationTest {
-	@BeforeEach
-	@Override
-	void setUp() {
-		mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
-	}
-
 	@Test
 	void getUser_ShouldUseUserViewFieldNames_NotRawJsonPropertyNames() throws Exception {
 		// given

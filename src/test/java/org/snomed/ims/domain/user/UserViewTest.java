@@ -3,10 +3,8 @@ package org.snomed.ims.domain.user;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.snomed.ims.domain.User;
-import org.snomed.ims.domain.UserView;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
-import tools.jackson.databind.module.SimpleModule;
 
 import java.util.List;
 
@@ -17,9 +15,9 @@ class UserViewTest {
 
 	@BeforeEach
 	void setUp() {
-		SimpleModule module = new SimpleModule();
-		module.addSerializer(User.class, new UserView());
-		objectMapper = JsonMapper.builder().addModule(module).build();
+		// Deliberately a plain mapper with no module registered: UserView must be picked up
+		// from the @JsonSerialize annotation on User, not hand-wired here.
+		objectMapper = JsonMapper.builder().build();
 	}
 
 	@Test
